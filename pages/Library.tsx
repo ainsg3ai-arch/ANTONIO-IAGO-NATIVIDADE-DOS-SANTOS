@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { EXERCISE_DATABASE } from '../constants';
 import { MuscleGroup, Exercise } from '../types';
-import { Search, Youtube, Play, X } from 'lucide-react';
+import { Search, Youtube, Play, X, Flame, Target } from 'lucide-react';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 
 export const Library: React.FC = () => {
@@ -19,7 +20,6 @@ export const Library: React.FC = () => {
     <div className="p-6 min-h-screen pb-24">
       <h1 className="text-3xl font-bold text-white mb-6">Biblioteca</h1>
 
-      {/* Search */}
       <div className="relative mb-6">
         <Search className="absolute left-4 top-3.5 text-zinc-500" size={20} />
         <input 
@@ -31,7 +31,6 @@ export const Library: React.FC = () => {
         />
       </div>
 
-      {/* Filters */}
       <div className="flex overflow-x-auto space-x-2 mb-6 pb-2 no-scrollbar">
         {['Todos', ...Object.values(MuscleGroup)].map((cat) => (
             <button
@@ -44,7 +43,6 @@ export const Library: React.FC = () => {
         ))}
       </div>
 
-      {/* List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map((ex) => (
             <button 
@@ -62,25 +60,21 @@ export const Library: React.FC = () => {
                 </div>
                 <div className="p-3 flex flex-col justify-center flex-1">
                     <h3 className="font-bold text-white text-sm leading-tight mb-1 line-clamp-2">{ex.name}</h3>
-                    
                     <div className="flex flex-wrap gap-1 mt-1">
                         <span className="text-[10px] uppercase bg-zinc-800 text-zinc-400 px-2 py-1 rounded border border-zinc-700">{ex.muscleGroup}</span>
                     </div>
-
-                    <span className="mt-2 text-xs text-ains-primary font-bold flex items-center space-x-1 group-hover:underline">
-                        Assistir Aula
-                    </span>
+                    <span className="mt-2 text-xs text-ains-primary font-bold flex items-center space-x-1 group-hover:underline">Ficha Técnica</span>
                 </div>
             </button>
         ))}
       </div>
 
-      {/* Video Modal */}
+      {/* Detail Modal / Tech Sheet */}
       {selectedExercise && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-zinc-900 w-full max-w-lg rounded-2xl overflow-hidden border border-zinc-700 shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-4 flex justify-between items-center border-b border-zinc-800">
-                    <h3 className="text-lg font-bold text-white truncate pr-4">{selectedExercise.name}</h3>
+                    <h3 className="text-lg font-bold text-white truncate pr-4">Ficha Técnica</h3>
                     <button onClick={() => setSelectedExercise(null)} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors">
                         <X size={24} />
                     </button>
@@ -96,20 +90,40 @@ export const Library: React.FC = () => {
                 </div>
 
                 <div className="p-6 overflow-y-auto">
-                    <div className="flex space-x-2 mb-4">
-                        <span className="px-3 py-1 rounded-full bg-ains-primary/10 text-ains-primary text-xs font-bold border border-ains-primary/20">
-                            {selectedExercise.difficulty}
+                    <h2 className="text-xl font-bold text-white mb-4">{selectedExercise.name}</h2>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-zinc-800 p-3 rounded-lg">
+                            <div className="flex items-center text-zinc-400 text-xs font-bold uppercase mb-1">
+                                <Flame size={14} className="mr-1 text-orange-500" /> Queima Estimada
+                            </div>
+                            <span className="text-white font-bold">{selectedExercise.caloriesPerMinute || 5} kcal/min</span>
+                        </div>
+                        <div className="bg-zinc-800 p-3 rounded-lg">
+                            <div className="flex items-center text-zinc-400 text-xs font-bold uppercase mb-1">
+                                <Target size={14} className="mr-1 text-red-500" /> Dificuldade
+                            </div>
+                            <span className="text-white font-bold">{selectedExercise.difficulty}</span>
+                        </div>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-zinc-300 uppercase mb-2">Anatomia</h4>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        <span className="px-3 py-1 rounded-full bg-ains-primary text-black text-xs font-bold">
+                           Primário: {selectedExercise.muscleGroup}
                         </span>
-                        <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-xs font-bold border border-zinc-700">
-                            {selectedExercise.muscleGroup}
-                        </span>
+                        {selectedExercise.secondaryMuscles?.map(m => (
+                            <span key={m} className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-xs font-bold border border-zinc-700">
+                                {m}
+                            </span>
+                        ))}
                     </div>
                     
-                    <h4 className="text-sm font-bold text-zinc-300 uppercase mb-2">Instruções</h4>
-                    <p className="text-zinc-400 text-sm leading-relaxed">{selectedExercise.description}</p>
+                    <h4 className="text-sm font-bold text-zinc-300 uppercase mb-2">Instruções de Execução</h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed mb-4">{selectedExercise.description}</p>
                     
-                    <div className="mt-6 pt-6 border-t border-zinc-800 flex justify-between text-sm text-zinc-500">
-                        <span>Equipamento: {selectedExercise.equipmentRequired.join(', ')}</span>
+                    <div className="text-xs text-zinc-500 border-t border-zinc-800 pt-4">
+                        Requer: {selectedExercise.equipmentRequired.join(', ')}
                     </div>
                 </div>
             </div>

@@ -44,14 +44,16 @@ export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
-  equipmentRequired: Equipment[]; // Supports multiple equipment types
+  secondaryMuscles?: MuscleGroup[]; // New: Auxiliary muscles
+  equipmentRequired: Equipment[];
   difficulty: ExperienceLevel;
-  videoPlaceholder: string; // URL for image/thumbnail
-  videoUrl: string; // URL for YouTube video
+  videoPlaceholder: string;
+  videoUrl: string;
   description: string;
   reps?: string;
   sets?: number;
-  durationSeconds?: number; // For time-based
+  durationSeconds?: number;
+  caloriesPerMinute?: number; // New: METs estimate
 }
 
 export interface WorkoutSession {
@@ -75,7 +77,7 @@ export interface Achievement {
   id: string;
   title: string;
   description: string;
-  icon: any; // Lucide Icon component or string identifier
+  icon: any;
 }
 
 export interface UserAchievement {
