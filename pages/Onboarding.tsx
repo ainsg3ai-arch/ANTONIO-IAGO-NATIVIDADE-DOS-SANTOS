@@ -1,16 +1,19 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { UserProfile, Goal, Equipment, ExperienceLevel } from '../types';
-import { saveProfile } from '../services/storageService';
-import { Activity, Target, Dumbbell, ArrowRight } from 'lucide-react';
+import { saveProfile, getProfile } from '../services/storageService';
+import { Target, Dumbbell, ArrowRight } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
-  // Step 0 is the Splash/Welcome screen
-  const [step, setStep] = useState(0); 
+  const [searchParams] = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
+
+  // Step 0 is Splash. If Edit Mode, start at Step 1.
+  const [step, setStep] = useState(isEditMode ? 1 : 0); 
+  
   const [profile, setProfile] = useState<Partial<UserProfile>>({
     name: '',
     age: 25,
@@ -21,14 +24,34 @@ export const Onboarding: React.FC = () => {
     equipment: Equipment.NONE,
   });
 
+  // Load existing data if editing, or redirect if already logged in (and not editing)
+  useEffect(() => {
+    const existingProfile = getProfile();
+    
+    if (isEditMode && existingProfile) {
+        setProfile(existingProfile);
+        setStep(1); // Skip intro
+    } else if (existingProfile && existingProfile.onboarded && !isEditMode) {
+        // User already exists and tries to access /onboarding without edit mode -> Go to Dashboard
+        navigate('/'); 
+    }
+  }, [isEditMode, navigate]);
+
   const handleNext = () => {
     if (step < 4) {
       setStep(step + 1);
     } else {
-      // Finish
+      // Finish & Save
+      // Maintain existing 'onboarded' status or set to true
       const finalProfile = { ...profile, onboarded: true } as UserProfile;
       saveProfile(finalProfile);
-      navigate('/');
+      
+      // Navigate based on mode
+      if (isEditMode) {
+          navigate('/profile'); // Return to profile after edit
+      } else {
+          navigate('/'); // Go to dashboard after new signup
+      }
     }
   };
 
@@ -36,8 +59,8 @@ export const Onboarding: React.FC = () => {
     setProfile(prev => ({ ...prev, [key]: value }));
   };
 
-  // --- STEP 0: WELCOME SCREEN ---
-  if (step === 0) {
+  // --- STEP 0: WELCOME SCREEN (Only for New Users) ---
+  if (step === 0 && !isEditMode) {
     return (
       <div className="min-h-screen bg-ains-black relative flex flex-col items-center justify-center p-6 text-center overflow-hidden">
         {/* Background Effects */}
@@ -80,12 +103,18 @@ export const Onboarding: React.FC = () => {
           />
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-2 leading-tight">
-          {step === 1 && "Vamos nos conhecer"}
-          {step === 2 && "Qual seu objetivo principal?"}
-          {step === 3 && "Quais equipamentos você tem?"}
-          {step === 4 && "Detalhes físicos"}
-        </h1>
+        <div className="flex justify-between items-start mb-2">
+            <h1 className="text-3xl font-bold text-white leading-tight">
+            {step === 1 && (isEditMode ? "Editar Perfil" : "Vamos nos conhecer")}
+            {step === 2 && "Qual seu objetivo principal?"}
+            {step === 3 && "Quais equipamentos você tem?"}
+            {step === 4 && "Detalhes físicos"}
+            </h1>
+            {isEditMode && (
+                <button onClick={() => navigate('/profile')} className="text-xs text-red-500 font-bold uppercase mt-2">Cancelar</button>
+            )}
+        </div>
+        
         <p className="text-ains-muted mb-8">
           {step === 1 && "Isso ajuda a IA a personalizar sua experiência."}
           {step === 2 && "Vamos adaptar a intensidade com base nisso."}
@@ -104,7 +133,7 @@ export const Onboarding: React.FC = () => {
                 onChange={(e) => updateProfile('name', e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white focus:outline-none focus:border-ains-primary transition-colors text-lg"
                 placeholder="Ex. Alex"
-                autoFocus
+                autoFocus={!isEditMode}
               />
             </div>
             <div className="pt-4">
@@ -206,7 +235,7 @@ export const Onboarding: React.FC = () => {
 
       <div className="pb-8">
         <Button onClick={handleNext} fullWidth disabled={step === 1 && !profile.name} className="shadow-lg shadow-lime-900/20">
-          {step === 4 ? 'Gerar Meu Plano' : 'Próximo'}
+          {step === 4 ? (isEditMode ? 'Salvar Alterações' : 'Gerar Meu Plano') : 'Próximo'}
         </Button>
       </div>
     </div>

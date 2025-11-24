@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProfile, getUnlockedAchievements } from '../services/storageService';
@@ -73,12 +72,15 @@ export const Profile: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-          <button className="w-full bg-zinc-800 text-white p-4 rounded-xl flex items-center space-x-3">
+          <button 
+            onClick={() => navigate('/onboarding?mode=edit')}
+            className="w-full bg-zinc-800 text-white p-4 rounded-xl flex items-center space-x-3 hover:bg-zinc-700 transition-colors"
+          >
               <Settings size={20} />
-              <span>Configurações</span>
+              <span>Configurações / Editar Perfil</span>
           </button>
           
-          <button onClick={handleReset} className="w-full bg-red-500/10 text-red-500 p-4 rounded-xl flex items-center space-x-3">
+          <button onClick={handleReset} className="w-full bg-red-500/10 text-red-500 p-4 rounded-xl flex items-center space-x-3 hover:bg-red-500/20 transition-colors">
               <LogOut size={20} />
               <span>Resetar Dados</span>
           </button>
