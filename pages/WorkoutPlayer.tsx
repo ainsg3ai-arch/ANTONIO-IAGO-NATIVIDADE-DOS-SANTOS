@@ -80,6 +80,13 @@ export const WorkoutPlayer: React.FC = () => {
 
   const currentExercise: Exercise = workout.exercises[currentExerciseIndex];
   const isLastExercise = currentExerciseIndex === workout.exercises.length - 1;
+  const totalExercises = workout.exercises.length;
+  // Calculate Progress Percentage
+  // If resting, we are technically "between" exercises, so we show the completed amount
+  const progressPercent = ((currentExerciseIndex + (isResting ? 1 : 0)) / totalExercises) * 100;
+  // For better UX, let's just show progress based on current index being active (partial) or use steps
+  const displayProgress = ((currentExerciseIndex + 1) / totalExercises) * 100;
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -220,14 +227,31 @@ export const WorkoutPlayer: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="p-4 flex justify-between items-center bg-zinc-900/50 backdrop-blur border-b border-zinc-800 z-10">
-        <button onClick={quitWorkout} className="text-zinc-400 hover:text-white"><X /></button>
-        <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest">
-            {isResting ? 'DESCANSO' : `EXERCÍCIO ${currentExerciseIndex + 1}/${workout.exercises.length}`}
-        </span>
-        <div className="flex space-x-4">
-            <button onClick={() => setShowMusicMenu(true)} className="text-zinc-400 hover:text-ains-primary"><Music size={24} /></button>
-            <button onClick={() => setShowInfo(true)} className="text-ains-primary"><Info size={24} /></button>
+      <div className="flex flex-col z-10 bg-zinc-900/50 backdrop-blur border-b border-zinc-800">
+        <div className="p-4 flex justify-between items-center">
+            <button onClick={quitWorkout} className="text-zinc-400 hover:text-white"><X /></button>
+            
+            <div className="flex flex-col items-center">
+                <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest">
+                    {isResting ? 'DESCANSO' : `EXERCÍCIO ${currentExerciseIndex + 1}/${workout.exercises.length}`}
+                </span>
+                <span className="text-[10px] text-ains-primary font-bold">
+                    {Math.round(displayProgress)}%
+                </span>
+            </div>
+
+            <div className="flex space-x-4">
+                <button onClick={() => setShowMusicMenu(true)} className="text-zinc-400 hover:text-ains-primary"><Music size={24} /></button>
+                <button onClick={() => setShowInfo(true)} className="text-ains-primary"><Info size={24} /></button>
+            </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-zinc-800 h-1">
+            <div 
+                className="bg-ains-primary h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(163,230,53,0.5)]" 
+                style={{ width: `${displayProgress}%` }}
+            />
         </div>
       </div>
 
@@ -291,6 +315,13 @@ export const WorkoutPlayer: React.FC = () => {
                 
                 <div className="space-y-4 w-full max-w-xs">
                     <p className="text-zinc-400 text-sm">A seguir: <strong className="text-ains-primary">{workout.exercises[currentExerciseIndex + 1]?.name || "Finalizar Treino"}</strong></p>
+                    
+                    {/* Visual Progress in Rest Screen too */}
+                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-zinc-600 h-full" style={{ width: `${displayProgress}%` }}></div>
+                    </div>
+                    <p className="text-xs text-zinc-500">{Math.round(displayProgress)}% Concluído</p>
+
                     <Button onClick={handleNext} variant="outline" fullWidth>Pular Descanso</Button>
                 </div>
             </div>
