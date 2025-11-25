@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentWorkout, saveWorkoutSession, saveCurrentWorkout, checkAndUnlockAchievements } from '../services/storageService';
@@ -5,7 +6,7 @@ import { WorkoutSession, Exercise } from '../types';
 import { Button } from '../components/Button';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { speak, playTone, initAudio } from '../services/audioService';
-import { Timer, CheckCircle, X, Info, Music, Flame, Activity, Trophy } from 'lucide-react';
+import { Timer, CheckCircle, X, Info, Flame, Activity, Trophy, Share2, Camera, BicepsFlexed } from 'lucide-react';
 
 export const WorkoutPlayer: React.FC = () => {
   const navigate = useNavigate();
@@ -15,8 +16,11 @@ export const WorkoutPlayer: React.FC = () => {
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [showAchievementModal, setShowAchievementModal] = useState<string[]>([]);
   const [sessionCalories, setSessionCalories] = useState(0);
+  
+  // Finish State
+  const [isFinished, setIsFinished] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
   useEffect(() => {
     const w = getCurrentWorkout();
@@ -50,16 +54,35 @@ export const WorkoutPlayer: React.FC = () => {
 
   // Voice Coach
   useEffect(() => {
-    if(!workout) return;
+    if(!workout || isFinished) return;
     const ex = workout.exercises[currentExerciseIndex];
     if (isResting) speak("Descanso.");
     else setTimeout(() => speak(ex.name), 500);
-  }, [currentExerciseIndex, isResting]);
+  }, [currentExerciseIndex, isResting, isFinished]);
 
   if (!workout) return null;
+
   const currentEx = workout.exercises[currentExerciseIndex];
   const progress = ((currentExerciseIndex + 1) / workout.exercises.length) * 100;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+  const finishWorkout = () => {
+      // Save final stats
+      const completedWorkout = { 
+          ...workout, 
+          completed: true, 
+          dateCreated: Date.now(),
+          caloriesBurned: sessionCalories 
+      };
+      saveWorkoutSession(completedWorkout);
+      saveCurrentWorkout(null);
+      
+      const unlocked = checkAndUnlockAchievements();
+      setNewAchievements(unlocked);
+      
+      playTone('success');
+      setIsFinished(true); // Show Summary Screen
+  }
 
   const handleNext = () => {
     playTone('start');
@@ -78,25 +101,7 @@ export const WorkoutPlayer: React.FC = () => {
         setCurrentExerciseIndex(p => p + 1);
     } else {
         if (currentExerciseIndex === workout.exercises.length - 1) {
-             // Save final stats
-            const completedWorkout = { 
-                ...workout, 
-                completed: true, 
-                dateCreated: Date.now(),
-                caloriesBurned: sessionCalories 
-            };
-            saveWorkoutSession(completedWorkout);
-            saveCurrentWorkout(null);
-            
-            const newAchievements = checkAndUnlockAchievements();
-            if (newAchievements.length > 0) {
-                playTone('success');
-                setShowAchievementModal(newAchievements);
-            } else {
-                playTone('success');
-                speak("Treino finalizado.");
-                navigate('/');
-            }
+            finishWorkout();
         } else {
             setIsResting(true);
             setIsActive(true);
@@ -104,22 +109,53 @@ export const WorkoutPlayer: React.FC = () => {
     }
   };
 
-  const closeAchievementModal = () => navigate('/');
+  if (isFinished) {
+      return (
+          <div className="h-screen bg-ains-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-noise opacity-30"></div>
+              
+              {/* Share Card - Designed for Screenshots */}
+              <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 p-8 rounded-sm shadow-2xl relative z-10 text-center animate-fade-in border-t-4 border-t-ains-primary">
+                   <div className="flex justify-center mb-6">
+                        <div className="bg-ains-primary p-4 rounded-full shadow-[0_0_30px_rgba(255,215,0,0.4)]">
+                            <Trophy size={48} className="text-black" />
+                        </div>
+                   </div>
+                   
+                   <h2 className="text-3xl font-display font-bold uppercase text-white mb-2">Treino Concluído</h2>
+                   <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-8">{new Date().toLocaleDateString()} • AINSFIT</p>
+
+                   <div className="grid grid-cols-2 gap-4 mb-8">
+                       <div className="bg-black/40 p-4 rounded-sm border border-zinc-800">
+                           <div className="text-ains-primary text-2xl font-bold font-mono">{Math.floor(sessionCalories)}</div>
+                           <div className="text-[10px] text-zinc-500 uppercase font-bold">Calorias</div>
+                       </div>
+                       <div className="bg-black/40 p-4 rounded-sm border border-zinc-800">
+                           <div className="text-white text-2xl font-bold font-mono">{workout.exercises.length}</div>
+                           <div className="text-[10px] text-zinc-500 uppercase font-bold">Exercícios</div>
+                       </div>
+                   </div>
+
+                   {newAchievements.length > 0 && (
+                       <div className="mb-8 animate-bounce">
+                           <div className="text-xs text-yellow-500 font-bold uppercase mb-2">Nova Conquista Desbloqueada!</div>
+                           <div className="text-lg font-display text-white">{newAchievements[0]}</div>
+                       </div>
+                   )}
+
+                   <div className="space-y-3">
+                       <Button onClick={() => navigate('/')} fullWidth>Voltar ao Início</Button>
+                       <div className="flex items-center justify-center text-zinc-600 text-xs gap-2">
+                           <Camera size={14} /> <span>Tire um print para compartilhar</span>
+                       </div>
+                   </div>
+              </div>
+          </div>
+      )
+  }
 
   return (
     <div className="h-screen flex flex-col bg-black text-white relative font-sans">
-       {/* Achievement Modal */}
-      {showAchievementModal.length > 0 && (
-          <div className="absolute inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-              <div className="bg-yellow-500/20 p-12 rounded-full mb-6 animate-bounce">
-                  <Trophy size={80} className="text-yellow-400" />
-              </div>
-              <h2 className="text-3xl font-display font-bold text-white mb-2">Conquista!</h2>
-              <div className="space-y-2 mb-8">{showAchievementModal.map(ach => <p key={ach} className="text-xl text-ains-primary font-bold uppercase">{ach}</p>)}</div>
-              <Button onClick={closeAchievementModal} fullWidth>Continuar</Button>
-          </div>
-      )}
-
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur">
           <button onClick={() => { if(confirm("Sair do treino?")) { saveCurrentWorkout(null); navigate('/'); } }}><X className="text-zinc-500 hover:text-white" /></button>
@@ -132,13 +168,23 @@ export const WorkoutPlayer: React.FC = () => {
 
       {/* Info Overlay */}
       {showInfo && (
-          <div className="absolute top-16 left-0 w-full bg-zinc-900/95 backdrop-blur-md z-20 p-6 border-b border-ains-primary/30 animate-fade-in">
+          <div className="absolute top-16 left-0 w-full bg-zinc-900/95 backdrop-blur-md z-20 p-6 border-b border-ains-primary/30 animate-fade-in shadow-xl">
               <h3 className="font-display font-bold text-xl uppercase mb-2 text-white">{currentEx.name}</h3>
               <p className="text-zinc-400 text-sm mb-4 leading-relaxed">{currentEx.description}</p>
-              <div className="flex gap-2">
+              
+              <div className="flex gap-2 mb-4">
                   <span className="px-2 py-1 bg-ains-primary text-black text-xs font-bold uppercase">{currentEx.muscleGroup}</span>
                   <span className="px-2 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold uppercase">{currentEx.difficulty}</span>
               </div>
+
+              {currentEx.musculosPrimarios && (
+                  <div className="mb-2">
+                      <div className="text-[10px] text-ains-primary font-bold uppercase mb-1 flex items-center gap-1"><BicepsFlexed size={12}/> Foco Principal</div>
+                      <div className="flex flex-wrap gap-1">
+                          {currentEx.musculosPrimarios.map(m => <span key={m} className="text-xs text-white bg-black/50 px-2 py-1 rounded border border-zinc-700">{m}</span>)}
+                      </div>
+                  </div>
+              )}
           </div>
       )}
 

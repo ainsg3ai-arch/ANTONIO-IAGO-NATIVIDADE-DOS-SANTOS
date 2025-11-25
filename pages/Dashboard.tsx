@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, HabitLog, WorkoutSession, WorkoutTemplate } from '../types';
 import { getProfile, getHabits, saveHabitLog, getHistory, saveCurrentWorkout, getTemplates, deleteTemplate } from '../services/storageService';
 import { generateWorkoutAI, generateUUID } from '../services/aiLogic';
 import { Button } from '../components/Button';
-import { Droplets, Moon, Zap, RotateCcw, ChevronRight, Play, Trash2, Crown } from 'lucide-react';
+import { Droplets, Moon, Zap, RotateCcw, ChevronRight, Play, Trash2, Crown, Calculator } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -76,8 +77,13 @@ export const Dashboard: React.FC = () => {
             Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-ains-primary to-yellow-600">{profile.name}</span>
           </h1>
         </div>
-        <div className="bg-zinc-900 border border-zinc-700 p-1 rounded-full">
-             <Crown size={24} className="text-ains-primary" />
+        <div className="flex gap-2">
+            <button onClick={() => navigate('/tools')} className="bg-zinc-900 border border-zinc-700 p-2 rounded-full hover:border-ains-primary transition-colors text-zinc-400 hover:text-white">
+                <Calculator size={20} />
+            </button>
+            <div className="bg-zinc-900 border border-zinc-700 p-2 rounded-full">
+                 <Crown size={20} className="text-ains-primary" />
+            </div>
         </div>
       </div>
 

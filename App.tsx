@@ -5,21 +5,22 @@ import { Layout } from './components/Layout';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { WorkoutPlayer } from './pages/WorkoutPlayer';
-import { WorkoutBuilder } from './pages/WorkoutBuilder'; // New
+import { WorkoutBuilder } from './pages/WorkoutBuilder'; 
 import { Library } from './pages/Library';
 import { Stats } from './pages/Stats';
 import { Profile } from './pages/Profile';
 import { Coach } from './pages/Coach';
+import { Tools } from './pages/Tools'; // New
 import { getProfile } from './services/storageService';
 
-const RequireProfile = ({ children }: { children: React.ReactNode }) => {
+const RequireProfile: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const profile = getProfile();
   
   if (!profile || !profile.onboarded) {
     return <Navigate to="/onboarding" replace />;
   }
   
-  return children;
+  return <>{children}</>;
 };
 
 const App: React.FC = () => {
@@ -31,11 +32,12 @@ const App: React.FC = () => {
           
           <Route path="/" element={<RequireProfile><Dashboard /></RequireProfile>} />
           <Route path="/workout-active" element={<RequireProfile><WorkoutPlayer /></RequireProfile>} />
-          <Route path="/builder" element={<RequireProfile><WorkoutBuilder /></RequireProfile>} /> {/* New Route */}
+          <Route path="/builder" element={<RequireProfile><WorkoutBuilder /></RequireProfile>} /> 
           <Route path="/library" element={<RequireProfile><Library /></RequireProfile>} />
           <Route path="/stats" element={<RequireProfile><Stats /></RequireProfile>} />
           <Route path="/profile" element={<RequireProfile><Profile /></RequireProfile>} />
           <Route path="/coach" element={<RequireProfile><Coach /></RequireProfile>} />
+          <Route path="/tools" element={<RequireProfile><Tools /></RequireProfile>} /> {/* New Route */}
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
