@@ -12,13 +12,14 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "px-4 py-3 rounded-xl font-bold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
+  // Mais angular (rounded-sm), mais agressivo
+  const baseStyles = "px-6 py-4 font-display font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-sm border-2";
   
   const variants = {
-    primary: "bg-ains-primary text-ains-black hover:bg-lime-300 shadow-lg shadow-lime-900/20",
-    secondary: "bg-ains-card text-white hover:bg-zinc-700 border border-zinc-700",
-    outline: "border-2 border-ains-primary text-ains-primary hover:bg-ains-primary/10",
-    danger: "bg-red-500 text-white hover:bg-red-600"
+    primary: "bg-ains-primary border-ains-primary text-black hover:bg-yellow-400 hover:border-yellow-400 shadow-[0_0_20px_rgba(255,215,0,0.3)]",
+    secondary: "bg-ains-card border-zinc-700 text-white hover:border-zinc-500 hover:bg-zinc-800",
+    outline: "bg-transparent border-ains-primary text-ains-primary hover:bg-ains-primary/10",
+    danger: "bg-red-600 border-red-600 text-white hover:bg-red-700"
   };
 
   return (

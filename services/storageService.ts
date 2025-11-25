@@ -1,6 +1,5 @@
 
-import { UserProfile, WorkoutSession, HabitLog, UserAchievement } from '../types';
-import { ACHIEVEMENTS_LIST } from '../constants';
+import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate } from '../types';
 
 const KEYS = {
   PROFILE: 'ainsfit_profile',
@@ -8,6 +7,8 @@ const KEYS = {
   HABITS: 'ainsfit_habits',
   CURRENT_WORKOUT: 'ainsfit_current_workout',
   ACHIEVEMENTS: 'ainsfit_achievements',
+  TEMPLATES: 'ainsfit_templates', // New key
+  CHAT: 'ainsfit_chat'
 };
 
 export const saveProfile = (profile: UserProfile): void => {
@@ -32,7 +33,6 @@ export const getHistory = (): WorkoutSession[] => {
 
 export const saveHabitLog = (log: HabitLog): void => {
   const habits = getHabits();
-  // Upsert logic
   const index = habits.findIndex(h => h.date === log.date);
   if (index >= 0) {
     habits[index] = log;
@@ -69,7 +69,7 @@ export const getUnlockedAchievements = (): UserAchievement[] => {
 
 const saveUnlockedAchievement = (achievementId: string) => {
     const current = getUnlockedAchievements();
-    if (current.find(a => a.achievementId === achievementId)) return; // Already unlocked
+    if (current.find(a => a.achievementId === achievementId)) return;
 
     current.push({ achievementId, unlockedAt: Date.now() });
     localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(current));
@@ -99,7 +99,6 @@ export const checkAndUnlockAchievements = (): string[] => {
     }
 
     // 4. Early Bird (Workout before 8am)
-    // Check only the last workout for efficiency in this call context
     const lastWorkout = history[history.length - 1];
     if (lastWorkout && !existingIds.includes('early_bird')) {
         const date = new Date(lastWorkout.dateCreated);
@@ -122,3 +121,61 @@ export const checkAndUnlockAchievements = (): string[] => {
 
     return newUnlocked;
 }
+
+// --- Custom Templates ---
+
+export const saveTemplate = (template: WorkoutTemplate) => {
+    const templates = getTemplates();
+    templates.push(template);
+    localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(templates));
+}
+
+export const getTemplates = (): WorkoutTemplate[] => {
+    const data = localStorage.getItem(KEYS.TEMPLATES);
+    return data ? JSON.parse(data) : [];
+}
+
+export const deleteTemplate = (id: string) => {
+    const templates = getTemplates().filter(t => t.id !== id);
+    localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(templates));
+}
+
+// --- Data Backup & Restore ---
+
+export const exportData = () => {
+    const data = {
+        profile: getProfile(),
+        history: getHistory(),
+        habits: getHabits(),
+        achievements: getUnlockedAchievements(),
+        templates: getTemplates(),
+        timestamp: Date.now()
+    };
+    
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `AINSFIT_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+export const importData = async (file: File): Promise<boolean> => {
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        if (data.profile) localStorage.setItem(KEYS.PROFILE, JSON.stringify(data.profile));
+        if (data.history) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
+        if (data.habits) localStorage.setItem(KEYS.HABITS, JSON.stringify(data.habits));
+        if (data.achievements) localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(data.achievements));
+        if (data.templates) localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(data.templates));
+        
+        return true;
+    } catch (e) {
+        console.error("Failed to import data", e);
+        return false;
+    }
+};

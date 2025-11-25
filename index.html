@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <title>AINSFIT</title>
     <meta name="description" content="Offline AI Fitness Trainer" />
-    <meta name="theme-color" content="#09090b" />
+    <meta name="theme-color" content="#000000" />
     
-    <!-- Mantendo Tailwind via CDN para simplicidade no estilo, mas o React será compilado -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -16,40 +15,57 @@
           extend: {
             colors: {
               ains: {
-                black: '#09090b', // Zinc 950
-                dark: '#18181b',  // Zinc 900
-                card: '#27272a',  // Zinc 800
-                primary: '#a3e635', // Lime 400
-                secondary: '#3f6212', // Lime 800
-                text: '#f4f4f5', // Zinc 100
-                muted: '#a1a1aa', // Zinc 400
+                black: '#000000', // Absolute Black
+                dark: '#0C0C0C',  // Carbon
+                card: '#18181b',  // Gunmetal
+                primary: '#FFD700', // Gold Metallic
+                secondary: '#B8860B', // Dark Gold
+                text: '#EDEDED', // Off White
+                muted: '#525252', // Neutral Grey
+                accent: '#E50914', // Rock Red
               }
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              display: ['Oswald', 'sans-serif'], // Strong headers
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            },
+            backgroundImage: {
+                'noise': "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.05%22/%3E%3C/svg%3E')",
             }
           }
         }
       }
     </script>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Oswald:wght@500;700&display=swap');
+
       body {
-        background-color: #09090b;
-        color: #f4f4f5;
-        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+        background-color: #000000;
+        color: #EDEDED;
+        overscroll-behavior-y: none;
       }
-      /* Hide scrollbar for clean UI */
+      .bg-noise {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: 50;
+          background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.04%22/%3E%3C/svg%3E');
+      }
+      /* Hide scrollbar */
       ::-webkit-scrollbar {
         width: 0px;
         background: transparent;
       }
-      /* Animações utilitárias */
       @keyframes fade-in {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
       }
       .animate-fade-in {
-        animation: fade-in 0.3s ease-out forwards;
+        animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
     </style>
 <script type="importmap">
@@ -69,7 +85,7 @@
 </head>
   <body>
     <div id="root"></div>
-    <!-- Vite Entry Point -->
+    <div class="bg-noise"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -29,6 +29,21 @@ export enum MuscleGroup {
   FLEXIBILITY = 'Flexibilidade',
 }
 
+export enum Injury {
+  NONE = 'Nenhuma',
+  SHOULDERS = 'Ombros',
+  KNEES = 'Joelhos',
+  BACK = 'Costas/Lombar',
+  WRISTS = 'Punhos'
+}
+
+export enum CoachStyle {
+  FRIENDLY = 'Amigo Motivador',
+  MILITARY = 'Sargento Hardcore',
+  SCIENTIFIC = 'Cientista Analítico',
+  STOIC = 'Filósofo Estoico'
+}
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -37,6 +52,10 @@ export interface UserProfile {
   goal: Goal;
   level: ExperienceLevel;
   equipment: Equipment;
+  injuries: Injury[];
+  coachStyle: CoachStyle;
+  workoutDuration: number; // minutes
+  workoutFrequency: number; // days per week
   onboarded: boolean;
 }
 
@@ -44,7 +63,7 @@ export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
-  secondaryMuscles?: MuscleGroup[]; // New: Auxiliary muscles
+  secondaryMuscles?: MuscleGroup[];
   equipmentRequired: Equipment[];
   difficulty: ExperienceLevel;
   videoPlaceholder: string;
@@ -53,7 +72,8 @@ export interface Exercise {
   reps?: string;
   sets?: number;
   durationSeconds?: number;
-  caloriesPerMinute?: number; // New: METs estimate
+  caloriesPerMinute?: number;
+  contraindications?: Injury[];
 }
 
 export interface WorkoutSession {
@@ -66,11 +86,18 @@ export interface WorkoutSession {
   caloriesBurned?: number;
 }
 
+export interface WorkoutTemplate {
+    id: string;
+    name: string;
+    exercises: Exercise[];
+    createdAt: number;
+}
+
 export interface HabitLog {
-  date: string; // YYYY-MM-DD
-  waterIntake: number; // ml
+  date: string;
+  waterIntake: number;
   sleepHours: number;
-  mood: number; // 1-5
+  mood: number;
 }
 
 export interface Achievement {
@@ -83,4 +110,21 @@ export interface Achievement {
 export interface UserAchievement {
   achievementId: string;
   unlockedAt: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: number;
+}
+
+export interface Challenge {
+    id: string;
+    title: string;
+    goalDescription: string;
+    targetValue: number;
+    currentValue: number;
+    unit: 'workouts' | 'minutes' | 'calories';
+    deadline: number; 
 }

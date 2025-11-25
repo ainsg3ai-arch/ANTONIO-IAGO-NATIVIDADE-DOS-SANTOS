@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentWorkout, saveWorkoutSession, saveCurrentWorkout, checkAndUnlockAchievements } from '../services/storageService';
@@ -6,7 +5,7 @@ import { WorkoutSession, Exercise } from '../types';
 import { Button } from '../components/Button';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { speak, playTone, initAudio } from '../services/audioService';
-import { Timer, CheckCircle, ChevronRight, X, Info, Youtube, ExternalLink, Music, Trophy, Flame, Activity } from 'lucide-react';
+import { Timer, CheckCircle, X, Info, Music, Flame, Activity, Trophy } from 'lucide-react';
 
 export const WorkoutPlayer: React.FC = () => {
   const navigate = useNavigate();
@@ -16,108 +15,88 @@ export const WorkoutPlayer: React.FC = () => {
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [showMusicMenu, setShowMusicMenu] = useState(false);
   const [showAchievementModal, setShowAchievementModal] = useState<string[]>([]);
   const [sessionCalories, setSessionCalories] = useState(0);
 
   useEffect(() => {
     const w = getCurrentWorkout();
-    if (!w) {
-      navigate('/');
-    } else {
-        setWorkout(w);
-        initAudio(); 
-    }
+    if (!w) navigate('/');
+    else { setWorkout(w); initAudio(); }
   }, [navigate]);
 
   useEffect(() => {
     let interval: any = null;
-    if (isActive) {
-      interval = setInterval(() => {
-        setTimer(t => t + 1);
-      }, 1000);
-    } else if (!isActive && timer !== 0) {
-      clearInterval(interval);
-    }
+    if (isActive) interval = setInterval(() => setTimer(t => t + 1), 1000);
     return () => clearInterval(interval);
-  }, [isActive, timer]);
+  }, [isActive]);
 
-  // --- Calculate Calories in Real Time ---
-  useEffect(() => {
+  // Calculate Calories
+   useEffect(() => {
     if(isActive && !isResting && workout && timer > 0 && timer % 60 === 0) {
-        // Every minute, add calorie burn estimate
         const currentEx = workout.exercises[currentExerciseIndex];
         const burnRate = currentEx.caloriesPerMinute || 5;
         setSessionCalories(prev => prev + burnRate);
     }
   }, [timer, isActive, isResting, workout, currentExerciseIndex]);
 
-
-  // --- Sound Effects Logic (Countdown) ---
+  // Beeps Countdown
   useEffect(() => {
-      if(!workout) return;
-      const currentEx = workout.exercises[currentExerciseIndex];
-      if (!isResting && currentEx.durationSeconds && isActive) {
-          const remaining = currentEx.durationSeconds - timer;
-          if (remaining > 0 && remaining <= 3) {
-              playTone('beep');
-          }
+      if(!workout || !isActive) return;
+      const ex = workout.exercises[currentExerciseIndex];
+      if (!isResting && ex.durationSeconds) {
+          if (ex.durationSeconds - timer <= 3 && ex.durationSeconds - timer > 0) playTone('beep');
       }
-  }, [timer, isResting, isActive, workout, currentExerciseIndex]);
+  }, [timer]);
 
-
-  // --- Voice Coach Logic ---
+  // Voice Coach
   useEffect(() => {
     if(!workout) return;
-
-    if (isResting) {
-        speak("Descanso. Respire fundo.");
-    } else {
-        const ex = workout.exercises[currentExerciseIndex];
-        setTimeout(() => {
-            const instructions = ex.sets ? `${ex.sets} séries.` : `${ex.durationSeconds} segundos.`;
-            speak(`${ex.name}. ${instructions}`);
-        }, 500);
-    }
-  }, [currentExerciseIndex, isResting, workout]);
+    const ex = workout.exercises[currentExerciseIndex];
+    if (isResting) speak("Descanso.");
+    else setTimeout(() => speak(ex.name), 500);
+  }, [currentExerciseIndex, isResting]);
 
   if (!workout) return null;
-
-  const currentExercise: Exercise = workout.exercises[currentExerciseIndex];
-  const isLastExercise = currentExerciseIndex === workout.exercises.length - 1;
-  const displayProgress = ((currentExerciseIndex + 1) / workout.exercises.length) * 100;
-
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
-  const toggleTimer = () => {
-      if (!isActive) playTone('start');
-      setIsActive(!isActive);
-  }
+  const currentEx = workout.exercises[currentExerciseIndex];
+  const progress = ((currentExerciseIndex + 1) / workout.exercises.length) * 100;
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   const handleNext = () => {
     playTone('start');
     setIsActive(false);
     
-    // Add partial calories for remaining seconds (< 1 min)
+    // Add partial calories
     if (!isResting) {
-        const burnRate = currentExercise.caloriesPerMinute || 5;
+        const burnRate = currentEx.caloriesPerMinute || 5;
         const additionalCals = Math.floor((timer % 60) / 60 * burnRate);
         setSessionCalories(prev => prev + additionalCals);
     }
 
     setTimer(0);
-    
     if (isResting) {
         setIsResting(false);
-        setCurrentExerciseIndex(prev => prev + 1);
+        setCurrentExerciseIndex(p => p + 1);
     } else {
-        if (isLastExercise) {
-            finishWorkout();
+        if (currentExerciseIndex === workout.exercises.length - 1) {
+             // Save final stats
+            const completedWorkout = { 
+                ...workout, 
+                completed: true, 
+                dateCreated: Date.now(),
+                caloriesBurned: sessionCalories 
+            };
+            saveWorkoutSession(completedWorkout);
+            saveCurrentWorkout(null);
+            
+            const newAchievements = checkAndUnlockAchievements();
+            if (newAchievements.length > 0) {
+                playTone('success');
+                setShowAchievementModal(newAchievements);
+            } else {
+                playTone('success');
+                speak("Treino finalizado.");
+                navigate('/');
+            }
         } else {
             setIsResting(true);
             setIsActive(true);
@@ -125,208 +104,86 @@ export const WorkoutPlayer: React.FC = () => {
     }
   };
 
-  const finishWorkout = () => {
-    // Save final stats
-    const completedWorkout = { 
-        ...workout, 
-        completed: true, 
-        dateCreated: Date.now(),
-        caloriesBurned: sessionCalories 
-    };
-    saveWorkoutSession(completedWorkout);
-    saveCurrentWorkout(null);
-    
-    const newAchievements = checkAndUnlockAchievements();
-    if (newAchievements.length > 0) {
-        playTone('success');
-        speak("Treino concluído. Novas conquistas!");
-        setShowAchievementModal(newAchievements);
-    } else {
-        playTone('success');
-        speak("Treino finalizado com sucesso.");
-        navigate('/');
-    }
-  };
-
   const closeAchievementModal = () => navigate('/');
-  const quitWorkout = () => {
-      if(window.confirm("Sair do treino?")) {
-          saveCurrentWorkout(null);
-          navigate('/');
-      }
-  }
-
-  const openVideoExternal = () => window.open(currentExercise.videoUrl, '_blank');
-  const openMusicApp = (url: string) => {
-      window.open(url, '_blank');
-      setShowMusicMenu(false);
-  };
 
   return (
-    <div className="h-screen flex flex-col bg-ains-black relative">
-      {/* Achievement Modal */}
+    <div className="h-screen flex flex-col bg-black text-white relative font-sans">
+       {/* Achievement Modal */}
       {showAchievementModal.length > 0 && (
           <div className="absolute inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
               <div className="bg-yellow-500/20 p-12 rounded-full mb-6 animate-bounce">
                   <Trophy size={80} className="text-yellow-400" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">Conquista!</h2>
-              <div className="space-y-2 mb-8">{showAchievementModal.map(ach => <p key={ach} className="text-xl text-ains-primary font-bold">{ach}</p>)}</div>
+              <h2 className="text-3xl font-display font-bold text-white mb-2">Conquista!</h2>
+              <div className="space-y-2 mb-8">{showAchievementModal.map(ach => <p key={ach} className="text-xl text-ains-primary font-bold uppercase">{ach}</p>)}</div>
               <Button onClick={closeAchievementModal} fullWidth>Continuar</Button>
           </div>
       )}
 
-      {/* Info Modal */}
-      {showInfo && (
-          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-              <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-700 w-full max-w-sm animate-fade-in">
-                  <h3 className="text-xl font-bold text-white mb-2">{currentExercise.name}</h3>
-                  <p className="text-zinc-400 mb-4">{currentExercise.description}</p>
-                  
-                  {/* Anatomy Tags */}
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-start">
-                        <span className="text-xs text-zinc-500 w-20 font-bold uppercase mt-1">Primário</span>
-                        <span className="px-2 py-1 rounded bg-ains-primary text-black text-xs font-bold">{currentExercise.muscleGroup}</span>
-                    </div>
-                    {currentExercise.secondaryMuscles && currentExercise.secondaryMuscles.length > 0 && (
-                        <div className="flex items-start">
-                            <span className="text-xs text-zinc-500 w-20 font-bold uppercase mt-1">Auxiliar</span>
-                            <div className="flex flex-wrap gap-1">
-                                {currentExercise.secondaryMuscles.map(m => (
-                                    <span key={m} className="px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-xs">{m}</span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Button onClick={openVideoExternal} variant="secondary" fullWidth className="flex items-center justify-center space-x-2">
-                        <ExternalLink size={20} />
-                        <span>Abrir no YouTube</span>
-                    </Button>
-                    <Button onClick={() => setShowInfo(false)} fullWidth>Entendi</Button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* Music Menu */}
-      {showMusicMenu && (
-          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-              <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-700 w-full max-w-sm animate-fade-in">
-                  <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold text-white">Música</h3>
-                      <button onClick={() => setShowMusicMenu(false)} className="text-zinc-400"><X size={20}/></button>
-                  </div>
-                  <div className="space-y-3">
-                    <button onClick={() => openMusicApp('https://open.spotify.com')} className="w-full p-4 rounded-xl bg-[#1DB954] text-black font-bold flex items-center justify-center space-x-2"><span>Spotify</span></button>
-                    <button onClick={() => openMusicApp('https://music.youtube.com')} className="w-full p-4 rounded-xl bg-[#FF0000] text-white font-bold flex items-center justify-center space-x-2"><span>YouTube Music</span></button>
-                  </div>
-              </div>
-          </div>
-      )}
-
       {/* Header */}
-      <div className="flex flex-col z-10 bg-zinc-900/50 backdrop-blur border-b border-zinc-800">
-        <div className="p-4 flex justify-between items-center">
-            <button onClick={quitWorkout} className="text-zinc-400 hover:text-white"><X /></button>
-            <div className="flex flex-col items-center">
-                <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest">
-                    {isResting ? 'DESCANSO' : `EXERCÍCIO ${currentExerciseIndex + 1}/${workout.exercises.length}`}
-                </span>
-                <span className="text-[10px] text-ains-primary font-bold">
-                    {Math.round(displayProgress)}%
-                </span>
-            </div>
-            <div className="flex space-x-4">
-                <button onClick={() => setShowMusicMenu(true)} className="text-zinc-400 hover:text-ains-primary"><Music size={24} /></button>
-                <button onClick={() => setShowInfo(true)} className="text-ains-primary"><Info size={24} /></button>
-            </div>
-        </div>
-        <div className="w-full bg-zinc-800 h-1">
-            <div className="bg-ains-primary h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(163,230,53,0.5)]" style={{ width: `${displayProgress}%` }} />
-        </div>
+      <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur">
+          <button onClick={() => { if(confirm("Sair do treino?")) { saveCurrentWorkout(null); navigate('/'); } }}><X className="text-zinc-500 hover:text-white" /></button>
+          <div className="flex flex-col items-center">
+              <span className="font-display font-bold uppercase tracking-widest text-zinc-400 text-xs">{isResting ? 'RECOVER' : `SET ${currentExerciseIndex + 1}/${workout.exercises.length}`}</span>
+              <div className="w-24 h-1 bg-zinc-800 mt-1"><div className="bg-ains-primary h-full transition-all duration-300" style={{width: `${progress}%`}}></div></div>
+          </div>
+          <button onClick={() => setShowInfo(!showInfo)} className={showInfo ? 'text-ains-primary' : 'text-zinc-500'}><Info /></button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-        {!isResting ? (
-            <>
-                <div className="h-[35vh] w-full bg-black shrink-0 relative group">
-                    <YouTubeEmbed 
-                        url={currentExercise.videoUrl} 
-                        title={currentExercise.name}
-                        placeholder={currentExercise.videoPlaceholder}
-                        key={currentExercise.id} 
-                    />
-                    <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded text-[10px] font-bold text-white flex items-center">
-                        <Activity size={12} className="mr-1 text-red-500" />
-                        ONLINE
-                    </div>
-                </div>
+      {/* Info Overlay */}
+      {showInfo && (
+          <div className="absolute top-16 left-0 w-full bg-zinc-900/95 backdrop-blur-md z-20 p-6 border-b border-ains-primary/30 animate-fade-in">
+              <h3 className="font-display font-bold text-xl uppercase mb-2 text-white">{currentEx.name}</h3>
+              <p className="text-zinc-400 text-sm mb-4 leading-relaxed">{currentEx.description}</p>
+              <div className="flex gap-2">
+                  <span className="px-2 py-1 bg-ains-primary text-black text-xs font-bold uppercase">{currentEx.muscleGroup}</span>
+                  <span className="px-2 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold uppercase">{currentEx.difficulty}</span>
+              </div>
+          </div>
+      )}
 
-                <div className="flex-1 p-6 flex flex-col justify-between bg-ains-black">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+          {!isResting ? (
+              <>
+                <div className="h-[40vh] bg-zinc-900 relative">
+                    <YouTubeEmbed url={currentEx.videoUrl} title={currentEx.name} placeholder={currentEx.videoPlaceholder} />
+                    <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase flex items-center shadow-lg"><Activity size={12} className="mr-1"/> LIVE</div>
+                </div>
+                <div className="flex-1 p-6 flex flex-col justify-between">
                     <div>
-                        <h2 className="text-2xl font-bold text-white uppercase leading-tight mb-2">{currentExercise.name}</h2>
-                        
-                        <div className="flex items-center space-x-4 mb-4">
-                            <span className="text-ains-primary font-bold text-lg">{currentExercise.reps || `${currentExercise.durationSeconds}s`}</span>
+                        <h2 className="text-3xl font-display font-bold uppercase leading-none mb-2">{currentEx.name}</h2>
+                        <div className="flex items-center space-x-4 text-lg font-mono text-ains-primary">
+                            <span>{currentEx.reps || `${currentEx.durationSeconds}s`}</span>
                             <span className="text-zinc-600">|</span>
-                            <span className="text-white font-bold">{currentExercise.sets} Séries</span>
-                            <span className="text-zinc-600">|</span>
-                            <div className="flex items-center text-orange-500 text-xs font-bold">
-                                <Flame size={14} className="mr-1" />
-                                ~{currentExercise.caloriesPerMinute || 5} kcal/min
-                            </div>
+                            <span>{currentEx.sets} SÉRIES</span>
                         </div>
-
-                        {/* Real-time Stats Badge */}
-                        <div className="flex space-x-2 mb-4">
-                             <div className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-400">
-                                 Total: <span className="text-white font-bold">{sessionCalories} kcal</span>
-                             </div>
-                             <div className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-400">
-                                 Foco: <span className="text-ains-primary font-bold">{currentExercise.muscleGroup}</span>
-                             </div>
-                        </div>
-
-                        <p className="text-zinc-400 text-sm line-clamp-2">{currentExercise.description}</p>
+                         <div className="mt-2 bg-zinc-900/50 w-fit px-2 py-1 rounded border border-zinc-800 text-xs text-zinc-400">
+                                 Total: <span className="text-white font-bold">{Math.floor(sessionCalories)} kcal</span>
+                         </div>
+                    </div>
+                    
+                    <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm flex items-center justify-between">
+                        <span className={`text-5xl font-mono font-bold ${isActive ? 'text-white' : 'text-zinc-600'}`}>{formatTime(timer)}</span>
+                        <button onClick={() => {playTone('start'); setIsActive(!isActive)}} className={`px-6 py-2 font-bold uppercase tracking-wider text-sm ${isActive ? 'bg-zinc-800 text-white' : 'bg-ains-primary text-black'}`}>
+                            {isActive ? 'PAUSE' : 'START'}
+                        </button>
                     </div>
 
-                    <div className="mt-2 space-y-4">
-                        <div className="flex items-center justify-between bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-                            <div className="flex items-center space-x-3">
-                                <Timer className="text-zinc-400" />
-                                <span className={`text-3xl font-mono tracking-widest ${isActive && currentExercise.durationSeconds && (currentExercise.durationSeconds - timer <= 5) ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-                                    {formatTime(timer)}
-                                </span>
-                            </div>
-                            <button onClick={toggleTimer} className={`px-4 py-2 rounded-lg font-bold uppercase text-xs tracking-wider transition-colors ${isActive ? 'bg-zinc-800 text-red-400' : 'bg-ains-primary text-black'}`}>
-                                {isActive ? 'Pausar' : 'Iniciar'}
-                            </button>
-                        </div>
-                        <Button onClick={handleNext} fullWidth className="h-14 text-lg flex justify-between items-center px-8 shadow-lg shadow-lime-900/10">
-                            <span>Próximo</span>
-                            <CheckCircle />
-                        </Button>
-                    </div>
+                    <Button onClick={handleNext} fullWidth className="h-16 text-xl flex justify-between items-center px-6">
+                        <span>PRÓXIMO</span>
+                        <CheckCircle />
+                    </Button>
                 </div>
-            </>
-        ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-12 bg-zinc-900">
-                <div className="animate-pulse">
-                    <h3 className="text-zinc-500 font-bold uppercase tracking-[0.2em] mb-4">Tempo de Descanso</h3>
-                    <div className="text-8xl font-mono font-bold text-white mb-2">{formatTime(timer)}</div>
-                </div>
-                <div className="space-y-4 w-full max-w-xs">
-                    <p className="text-zinc-400 text-sm">A seguir: <strong className="text-ains-primary">{workout.exercises[currentExerciseIndex + 1]?.name || "Finalizar"}</strong></p>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden"><div className="bg-zinc-600 h-full" style={{ width: `${displayProgress}%` }}></div></div>
-                    <Button onClick={handleNext} variant="outline" fullWidth>Pular Descanso</Button>
-                </div>
-            </div>
-        )}
+              </>
+          ) : (
+              <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 p-8 text-center">
+                  <span className="text-zinc-500 font-bold uppercase tracking-[0.5em] mb-8">DESCANSO</span>
+                  <div className="text-9xl font-mono font-bold text-white mb-8">{formatTime(timer)}</div>
+                  <p className="text-zinc-400 mb-8 font-mono text-sm">PRÓXIMO: <span className="text-white">{workout.exercises[currentExerciseIndex + 1]?.name || 'FIM'}</span></p>
+                  <Button onClick={handleNext} variant="outline" fullWidth>PULAR</Button>
+              </div>
+          )}
       </div>
     </div>
   );

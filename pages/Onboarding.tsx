@@ -1,243 +1,150 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { UserProfile, Goal, Equipment, ExperienceLevel } from '../types';
+import { UserProfile, Goal, Equipment, ExperienceLevel, Injury, CoachStyle } from '../types';
 import { saveProfile, getProfile } from '../services/storageService';
-import { Target, Dumbbell, ArrowRight } from 'lucide-react';
+import { Dumbbell, ArrowRight, ShieldAlert, Bot, ChevronLeft } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isEditMode = searchParams.get('mode') === 'edit';
-
-  // Step 0 is Splash. If Edit Mode, start at Step 1.
   const [step, setStep] = useState(isEditMode ? 1 : 0); 
-  
   const [profile, setProfile] = useState<Partial<UserProfile>>({
-    name: '',
-    age: 25,
-    weight: 70,
-    height: 175,
-    goal: Goal.LOSE_WEIGHT,
-    level: ExperienceLevel.BEGINNER,
-    equipment: Equipment.NONE,
+    name: '', age: 25, weight: 70, height: 175, goal: Goal.LOSE_WEIGHT, level: ExperienceLevel.BEGINNER,
+    equipment: Equipment.NONE, injuries: [Injury.NONE], coachStyle: CoachStyle.FRIENDLY,
+    workoutDuration: 45, workoutFrequency: 3
   });
 
-  // Load existing data if editing, or redirect if already logged in (and not editing)
   useEffect(() => {
-    const existingProfile = getProfile();
-    
-    if (isEditMode && existingProfile) {
-        setProfile(existingProfile);
-        setStep(1); // Skip intro
-    } else if (existingProfile && existingProfile.onboarded && !isEditMode) {
-        // User already exists and tries to access /onboarding without edit mode -> Go to Dashboard
-        navigate('/'); 
-    }
-  }, [isEditMode, navigate]);
+    const existing = getProfile();
+    if (existing?.onboarded && !isEditMode) navigate('/');
+    if (isEditMode && existing) setProfile(existing);
+  }, []);
 
   const handleNext = () => {
-    if (step < 4) {
-      setStep(step + 1);
-    } else {
-      // Finish & Save
-      // Maintain existing 'onboarded' status or set to true
-      const finalProfile = { ...profile, onboarded: true } as UserProfile;
-      saveProfile(finalProfile);
-      
-      // Navigate based on mode
-      if (isEditMode) {
-          navigate('/profile'); // Return to profile after edit
-      } else {
-          navigate('/'); // Go to dashboard after new signup
-      }
+    if (step < 8) setStep(step + 1);
+    else {
+      saveProfile({ ...profile, onboarded: true } as UserProfile);
+      navigate(isEditMode ? '/profile' : '/');
     }
   };
 
-  const updateProfile = (key: keyof UserProfile, value: any) => {
-    setProfile(prev => ({ ...prev, [key]: value }));
-  };
+  const update = (k: keyof UserProfile, v: any) => setProfile(p => ({ ...p, [k]: v }));
 
-  // --- STEP 0: WELCOME SCREEN (Only for New Users) ---
-  if (step === 0 && !isEditMode) {
-    return (
-      <div className="min-h-screen bg-ains-black relative flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-ains-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-ains-primary/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="z-10 flex flex-col items-center animate-fade-in">
-          <Logo size={120} className="mb-8" />
-          
-          <p className="text-xl font-medium text-white max-w-xs leading-relaxed mb-2">
-            Supere seus limites.
-          </p>
-          <p className="text-lg text-zinc-400 max-w-xs mb-12">
-            Sem internet. Sem desculpas.
-          </p>
-
-          <div className="w-full max-w-xs space-y-4">
-             <Button onClick={() => setStep(1)} fullWidth className="group relative overflow-hidden">
-                <span className="relative z-10 flex items-center justify-center space-x-2">
-                  <span>COMEÇAR AGORA</span>
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                </span>
-             </Button>
-             <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">100% Offline • Gratuito</p>
+  if (step === 0 && !isEditMode) return (
+      <div className="h-screen bg-ains-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-noise opacity-20"></div>
+          <div className="z-10 text-center animate-fade-in">
+              <Logo size={100} className="mb-12" />
+              <h1 className="text-5xl font-display font-bold text-white uppercase mb-4 leading-none">Domine<br/><span className="text-ains-primary">Seu Corpo</span></h1>
+              <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase mb-12">Sem Internet. Sem Limites.</p>
+              <Button onClick={() => setStep(1)} fullWidth className="text-lg py-5 flex items-center justify-center gap-2">INICIAR <ArrowRight/></Button>
           </div>
-        </div>
       </div>
-    );
-  }
+  );
 
-  // --- STEPS 1-4: FORM ---
   return (
-    <div className="min-h-screen bg-ains-black p-6 flex flex-col justify-between max-w-md mx-auto">
-      <div className="mt-8 animate-fade-in">
-        {/* Progress Bar */}
-        <div className="w-full bg-zinc-800 h-1 rounded-full mb-8">
-          <div 
-            className="bg-ains-primary h-1 rounded-full transition-all duration-300 shadow-[0_0_10px_#a3e635]"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+    <div className="h-screen bg-ains-black p-6 flex flex-col">
+        <div className="flex justify-between items-center mb-8">
+            <button onClick={() => setStep(s => s - 1)} className="text-zinc-500 hover:text-white"><ChevronLeft/></button>
+            <div className="text-xs font-mono text-ains-primary">PASSO {step}/8</div>
         </div>
 
-        <div className="flex justify-between items-start mb-2">
-            <h1 className="text-3xl font-bold text-white leading-tight">
-            {step === 1 && (isEditMode ? "Editar Perfil" : "Vamos nos conhecer")}
-            {step === 2 && "Qual seu objetivo principal?"}
-            {step === 3 && "Quais equipamentos você tem?"}
-            {step === 4 && "Detalhes físicos"}
-            </h1>
-            {isEditMode && (
-                <button onClick={() => navigate('/profile')} className="text-xs text-red-500 font-bold uppercase mt-2">Cancelar</button>
+        <div className="flex-1 animate-fade-in">
+            <h2 className="text-3xl font-display font-bold text-white uppercase mb-2">
+                {step === 1 && "Quem é você?"}
+                {step === 2 && "Qual a missão?"}
+                {step === 3 && "Frequência"}
+                {step === 4 && "Tempo de Treino"}
+                {step === 5 && "Arsenal"}
+                {step === 6 && "Medidas"}
+                {step === 7 && "Áreas de Risco"}
+                {step === 8 && "Estilo do Coach"}
+            </h2>
+            <p className="text-zinc-500 text-sm mb-8 font-mono uppercase tracking-wide">Configure seu protocolo.</p>
+
+            {step === 1 && (
+                <div className="space-y-4">
+                    <input value={profile.name} onChange={e => update('name', e.target.value)} placeholder="SEU NOME" className="w-full bg-zinc-900 border-b-2 border-zinc-700 p-4 text-2xl font-bold text-white focus:border-ains-primary outline-none uppercase placeholder-zinc-700"/>
+                    <div className="space-y-2">
+                        {Object.values(ExperienceLevel).map(l => (
+                            <button key={l} onClick={() => update('level', l)} className={`w-full p-4 text-left border rounded-sm ${profile.level === l ? 'bg-ains-primary border-ains-primary text-black' : 'bg-transparent border-zinc-800 text-zinc-500'} font-bold uppercase transition-colors`}>{l}</button>
+                        ))}
+                    </div>
+                </div>
             )}
+
+            {step === 2 && (
+                <div className="space-y-2">
+                    {Object.values(Goal).map(g => (
+                        <button key={g} onClick={() => update('goal', g)} className={`w-full p-6 text-left border-2 rounded-sm ${profile.goal === g ? 'border-ains-primary text-white bg-ains-primary/10' : 'border-zinc-800 text-zinc-500'} font-display font-bold text-xl uppercase`}>{g}</button>
+                    ))}
+                </div>
+            )}
+
+            {step === 3 && (
+                <div className="grid grid-cols-4 gap-4">
+                    {[2,3,4,5].map(d => (
+                        <button key={d} onClick={() => update('workoutFrequency', d)} className={`aspect-square flex items-center justify-center text-2xl font-bold border-2 rounded-sm ${profile.workoutFrequency === d ? 'border-ains-primary bg-ains-primary text-black' : 'border-zinc-800 text-zinc-500'}`}>{d}x</button>
+                    ))}
+                </div>
+            )}
+             {step === 4 && (
+                <div className="space-y-2">
+                    {[15,30,45,60].map(d => (
+                        <button key={d} onClick={() => update('workoutDuration', d)} className={`w-full p-4 border-2 rounded-sm ${profile.workoutDuration === d ? 'border-ains-primary text-white' : 'border-zinc-800 text-zinc-500'} font-mono font-bold text-lg`}>{d} MIN</button>
+                    ))}
+                </div>
+            )}
+            {step === 5 && (
+                 <div className="space-y-2">
+                    {Object.values(Equipment).map(e => (
+                        <button key={e} onClick={() => update('equipment', e)} className={`w-full p-4 border rounded-sm ${profile.equipment === e ? 'bg-zinc-800 border-white text-white' : 'bg-transparent border-zinc-800 text-zinc-500'} font-bold uppercase flex items-center gap-2`}><Dumbbell size={16}/> {e}</button>
+                    ))}
+                </div>
+            )}
+            {step === 6 && (
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                        <span className="text-zinc-500 font-bold uppercase">Idade</span>
+                        <input type="number" value={profile.age} onChange={e => update('age', Number(e.target.value))} className="bg-transparent text-right text-3xl font-bold text-white outline-none w-20"/>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                        <span className="text-zinc-500 font-bold uppercase">Peso (kg)</span>
+                        <input type="number" value={profile.weight} onChange={e => update('weight', Number(e.target.value))} className="bg-transparent text-right text-3xl font-bold text-white outline-none w-24"/>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                        <span className="text-zinc-500 font-bold uppercase">Altura (cm)</span>
+                        <input type="number" value={profile.height} onChange={e => update('height', Number(e.target.value))} className="bg-transparent text-right text-3xl font-bold text-white outline-none w-24"/>
+                    </div>
+                </div>
+            )}
+            {step === 7 && (
+                <div className="space-y-2">
+                     {Object.values(Injury).map(i => {
+                         const active = profile.injuries?.includes(i);
+                         return <button key={i} onClick={() => {
+                             let news = active ? profile.injuries?.filter(x => x !== i) : [...(profile.injuries || []), i];
+                             if(!news?.length) news = [Injury.NONE];
+                             update('injuries', news);
+                         }} className={`w-full p-4 border rounded-sm flex items-center justify-between ${active ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-zinc-800 text-zinc-500'} font-bold uppercase`}><div className="flex gap-2"><ShieldAlert size={18}/> {i}</div></button>
+                     })}
+                </div>
+            )}
+            {step === 8 && (
+                 <div className="space-y-2">
+                    {Object.values(CoachStyle).map(s => (
+                        <button key={s} onClick={() => update('coachStyle', s)} className={`w-full p-4 border rounded-sm ${profile.coachStyle === s ? 'border-ains-primary text-ains-primary' : 'border-zinc-800 text-zinc-500'} font-bold uppercase flex items-center gap-2`}><Bot size={18}/> {s}</button>
+                    ))}
+                </div>
+            )}
+
         </div>
-        
-        <p className="text-ains-muted mb-8">
-          {step === 1 && "Isso ajuda a IA a personalizar sua experiência."}
-          {step === 2 && "Vamos adaptar a intensidade com base nisso."}
-          {step === 3 && "Sem academia? Sem problemas."}
-          {step === 4 && "Usado para cálculos de calorias."}
-        </p>
-
-        {/* Step 1: Name & Level */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm text-ains-muted mb-2 font-bold uppercase tracking-wider">Seu Nome</label>
-              <input 
-                type="text" 
-                value={profile.name}
-                onChange={(e) => updateProfile('name', e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white focus:outline-none focus:border-ains-primary transition-colors text-lg"
-                placeholder="Ex. Alex"
-                autoFocus={!isEditMode}
-              />
-            </div>
-            <div className="pt-4">
-              <label className="block text-sm text-ains-muted mb-2 font-bold uppercase tracking-wider">Nível de Experiência</label>
-              <div className="grid grid-cols-1 gap-3">
-                {Object.values(ExperienceLevel).map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => updateProfile('level', lvl)}
-                    className={`p-4 rounded-xl text-left border transition-all flex justify-between items-center ${profile.level === lvl ? 'border-ains-primary bg-ains-primary/10 text-white shadow-lg shadow-lime-900/20' : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800'}`}
-                  >
-                    <span className="font-medium">{lvl}</span>
-                    {profile.level === lvl && <div className="w-3 h-3 bg-ains-primary rounded-full shadow-[0_0_8px_#a3e635]"></div>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Goal */}
-        {step === 2 && (
-          <div className="grid grid-cols-1 gap-4">
-            {Object.values(Goal).map((g) => (
-              <button
-                key={g}
-                onClick={() => updateProfile('goal', g)}
-                className={`p-6 rounded-2xl flex items-center space-x-4 border transition-all ${profile.goal === g ? 'border-ains-primary bg-ains-primary text-ains-black shadow-lg shadow-lime-500/20' : 'border-zinc-800 bg-zinc-900 text-white hover:border-zinc-600'}`}
-              >
-                <div className={`p-3 rounded-full ${profile.goal === g ? 'bg-black/10' : 'bg-zinc-800'}`}>
-                  <Target size={24} />
-                </div>
-                <span className="font-bold text-lg">{g}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Step 3: Equipment */}
-        {step === 3 && (
-          <div className="grid grid-cols-1 gap-4">
-            {Object.values(Equipment).map((eq) => (
-              <button
-                key={eq}
-                onClick={() => updateProfile('equipment', eq)}
-                className={`p-6 rounded-2xl flex items-center space-x-4 border transition-all ${profile.equipment === eq ? 'border-ains-primary bg-ains-primary text-ains-black shadow-lg shadow-lime-500/20' : 'border-zinc-800 bg-zinc-900 text-white hover:border-zinc-600'}`}
-              >
-                <div className={`p-3 rounded-full ${profile.equipment === eq ? 'bg-black/10' : 'bg-zinc-800'}`}>
-                  <Dumbbell size={24} />
-                </div>
-                <span className="font-bold text-lg">{eq}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Step 4: Measurements */}
-        {step === 4 && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
-              <span className="text-ains-muted font-medium">Idade</span>
-              <div className="flex items-center">
-                <input 
-                    type="number" 
-                    value={profile.age}
-                    onChange={(e) => updateProfile('age', Number(e.target.value))}
-                    className="w-20 bg-transparent text-right text-3xl font-bold text-white focus:outline-none"
-                />
-                <span className="ml-2 text-zinc-500 text-sm">anos</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
-              <span className="text-ains-muted font-medium">Peso</span>
-              <div className="flex items-center">
-                <input 
-                    type="number" 
-                    value={profile.weight}
-                    onChange={(e) => updateProfile('weight', Number(e.target.value))}
-                    className="w-24 bg-transparent text-right text-3xl font-bold text-white focus:outline-none"
-                />
-                <span className="ml-2 text-zinc-500 text-sm">kg</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
-              <span className="text-ains-muted font-medium">Altura</span>
-              <div className="flex items-center">
-                <input 
-                    type="number" 
-                    value={profile.height}
-                    onChange={(e) => updateProfile('height', Number(e.target.value))}
-                    className="w-24 bg-transparent text-right text-3xl font-bold text-white focus:outline-none"
-                />
-                <span className="ml-2 text-zinc-500 text-sm">cm</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="pb-8">
-        <Button onClick={handleNext} fullWidth disabled={step === 1 && !profile.name} className="shadow-lg shadow-lime-900/20">
-          {step === 4 ? (isEditMode ? 'Salvar Alterações' : 'Gerar Meu Plano') : 'Próximo'}
+        <Button onClick={handleNext} fullWidth disabled={step===1 && !profile.name} className="mt-4">
+            {step === 8 ? (isEditMode ? 'SALVAR TUDO' : 'FINALIZAR') : 'AVANÇAR'}
         </Button>
-      </div>
     </div>
   );
 };
