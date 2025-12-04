@@ -10,7 +10,11 @@ import { Library } from './pages/Library';
 import { Stats } from './pages/Stats';
 import { Profile } from './pages/Profile';
 import { Coach } from './pages/Coach';
-import { Tools } from './pages/Tools'; // New
+import { Tools } from './pages/Tools';
+import { Nutrition } from './pages/Nutrition'; // New
+import { Store } from './pages/Store'; // New
+import { Campaign } from './pages/Campaign'; // New
+import { Battle } from './pages/Battle'; // New
 import { getProfile } from './services/storageService';
 
 const RequireProfile: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
@@ -37,7 +41,12 @@ const App: React.FC = () => {
           <Route path="/stats" element={<RequireProfile><Stats /></RequireProfile>} />
           <Route path="/profile" element={<RequireProfile><Profile /></RequireProfile>} />
           <Route path="/coach" element={<RequireProfile><Coach /></RequireProfile>} />
-          <Route path="/tools" element={<RequireProfile><Tools /></RequireProfile>} /> {/* New Route */}
+          <Route path="/tools" element={<RequireProfile><Tools /></RequireProfile>} />
+          
+          <Route path="/nutrition" element={<RequireProfile><Nutrition /></RequireProfile>} />
+          <Route path="/store" element={<RequireProfile><Store /></RequireProfile>} />
+          <Route path="/campaign" element={<RequireProfile><Campaign /></RequireProfile>} />
+          <Route path="/battle" element={<RequireProfile><Battle /></RequireProfile>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

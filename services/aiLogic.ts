@@ -1,11 +1,10 @@
+
 import { EXERCISE_DATABASE } from '../constants';
 import { UserProfile, WorkoutSession, Exercise, Equipment, MuscleGroup, Goal, Injury, ChatMessage, CoachStyle } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const generateUUID = () => {
-   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-     return crypto.randomUUID();
-   }
-   return Math.random().toString(36).substring(2, 15);
+   return uuidv4();
 }
 
 const isExerciseSafe = (exercise: Exercise, injuries: Injury[]): boolean => {
@@ -30,7 +29,8 @@ export const generateWorkoutAI = (profile: UserProfile): WorkoutSession => {
 
   // 1. Filtrar Exercícios Seguros e Disponíveis
   let availableExercises = EXERCISE_DATABASE.filter(ex => {
-    const hasEquipment = ex.equipmentRequired.includes(equipment) || ex.equipmentRequired.includes(Equipment.NONE);
+    const required = ex.equipmentRequired || [Equipment.NONE];
+    const hasEquipment = required.includes(equipment) || required.includes(Equipment.NONE);
     const safe = isExerciseSafe(ex, injuries);
     return hasEquipment && safe;
   });

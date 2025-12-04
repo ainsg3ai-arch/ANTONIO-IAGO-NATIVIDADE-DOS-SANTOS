@@ -1,45 +1,505 @@
 
-import { Exercise, Equipment, ExperienceLevel, MuscleGroup, Achievement, RecoverySession, Post } from './types';
-import { Medal, Flame, Zap, Sunrise, Award, Smile } from 'lucide-react';
+import { Exercise, ExperienceLevel, MuscleGroup, ExerciseCategory, Program, Achievement, Post, StoreItem } from './types';
+import { Medal, Flame, Zap, Sunrise, Award } from 'lucide-react';
 
-// --- RECOVERY & MINDFULNESS ---
-export const RECOVERY_SESSIONS: RecoverySession[] = [
+// --- STORE ITEMS ---
+export const STORE_ITEMS: StoreItem[] = [
+    { id: 'skin_gold', name: 'Avatar Gold', type: 'skin', cost: 500, preview: '#FFD700', description: 'Status de elite.' },
+    { id: 'skin_neon', name: 'Cyber Neon', type: 'skin', cost: 300, preview: '#00F2EA', description: 'Estilo noturno.' },
+    { id: 'skin_stealth', name: 'Stealth Black', type: 'skin', cost: 200, preview: '#1a1a1a', description: 'Discreto e letal.' },
+    { id: 'skin_fire', name: 'Magma', type: 'skin', cost: 150, preview: '#ef4444', description: 'Intensidade máxima.' }
+];
+
+// --- EXERCISE DATABASE (CALISTHENICS ONLY) ---
+export const EXERCISE_DATABASE: Exercise[] = [
+    // 1. PEITO (PUSH)
     {
-        id: 'rec_1',
-        title: 'Descompressão Lombar',
-        type: 'stretching',
-        durationMinutes: 10,
-        description: 'Série focada em aliviar a tensão na parte inferior das costas após dias de agachamento ou muito tempo sentado.'
+        id: 'push_1',
+        name: 'Flexão Tradicional',
+        category: ExerciseCategory.PUSH,
+        muscleGroup: MuscleGroup.CHEST,
+        musculosPrimarios: ['Peitoral Maior', 'Tríceps', 'Ombro Anterior'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=IODxDxX7oi4',
+        description: 'O exercício fundamental para força de empurrar.',
+        stepByStep: [
+            'Mãos alinhadas aos ombros.',
+            'Corpo reto da cabeça aos pés (prancha).',
+            'Desça até formar 90º nos cotovelos.',
+            'Suba estendendo os braços completamente.'
+        ],
+        commonErrors: ['Quadril muito baixo ou alto', 'Cotovelos muito abertos'],
+        breathingTip: 'Inspire ao descer, expire ao subir.',
+        variations: {
+            easier: ['Flexão com Joelhos', 'Flexão na Parede', 'Flexão Inclinada (mãos em banco)'],
+            harder: ['Flexão Diamante', 'Flexão Arqueiro', 'Flexão Explosiva']
+        },
+        reps: '10-15',
+        sets: 3,
+        caloriesPerMinute: 8
     },
     {
-        id: 'rec_2',
-        title: 'Mobilidade de Quadril',
-        type: 'mobility',
-        durationMinutes: 15,
-        description: 'Essencial para melhorar a profundidade do agachamento e evitar dores no joelho.'
+        id: 'push_2',
+        name: 'Flexão Aberta',
+        category: ExerciseCategory.PUSH,
+        muscleGroup: MuscleGroup.CHEST,
+        musculosPrimarios: ['Peitoral Externo', 'Ombros'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/qQ1tD8j6i5g/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=qQ1tD8j6i5g',
+        description: 'Variação para focar na parte externa do peitoral.',
+        stepByStep: [
+            'Mãos mais afastadas que a largura dos ombros.',
+            'Desça mantendo os cotovelos apontando para fora.',
+            'Suba contraindo o peitoral.'
+        ],
+        variations: {
+            easier: ['Flexão Aberta com Joelhos'],
+            harder: ['Flexão Arqueiro']
+        },
+        reps: '10-12',
+        sets: 3,
+        caloriesPerMinute: 8
     },
     {
-        id: 'rec_3',
-        title: 'Respiração Focada',
-        type: 'meditation',
-        durationMinutes: 5,
-        description: 'Técnica Box Breathing (4-4-4-4) para reduzir cortisol pós-treino intenso.'
+        id: 'push_3',
+        name: 'Flexão Diamante',
+        category: ExerciseCategory.PUSH,
+        muscleGroup: MuscleGroup.ARMS,
+        musculosPrimarios: ['Tríceps', 'Peitoral Interno'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/J0DnG1_S92I/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=J0DnG1_S92I',
+        description: 'Foco intenso no tríceps e parte interna do peito.',
+        stepByStep: [
+            'Junte as mãos formando um diamante com indicadores e polegares.',
+            'Mantenha cotovelos próximos ao corpo.',
+            'Desça até o peito tocar as mãos.'
+        ],
+        variations: {
+            easier: ['Flexão Fechada', 'Flexão Diamante com Joelhos'],
+            harder: ['Flexão Diamante Pés Elevados', 'Sphinx Push Up']
+        },
+        reps: '8-12',
+        sets: 3,
+        caloriesPerMinute: 9
     },
     {
-        id: 'rec_4',
-        title: 'Devocional: Força e Espírito',
-        type: 'meditation',
-        durationMinutes: 5,
-        description: 'Reflexão curta sobre disciplina e cuidado com o corpo.'
+        id: 'push_4',
+        name: 'Flexão Declinada',
+        category: ExerciseCategory.PUSH,
+        muscleGroup: MuscleGroup.CHEST,
+        musculosPrimarios: ['Peitoral Superior', 'Ombros'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/SKPab2YC8BE/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=SKPab2YC8BE',
+        description: 'Pés elevados para atingir a parte superior do peito.',
+        stepByStep: [
+            'Coloque os pés em um banco ou cadeira.',
+            'Mãos no chão na largura dos ombros.',
+            'Desça controladamente até o rosto aproximar do chão.'
+        ],
+        reps: '10-12',
+        sets: 3,
+        caloriesPerMinute: 9
+    },
+    {
+        id: 'push_5',
+        name: 'Pike Push-Up',
+        category: ExerciseCategory.PUSH,
+        muscleGroup: MuscleGroup.SHOULDERS,
+        musculosPrimarios: ['Ombros', 'Trapézio', 'Tríceps'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/sposDXWEB0A/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=sposDXWEB0A',
+        description: 'Simula o desenvolvimento de ombros com peso corporal.',
+        stepByStep: [
+            'Fique em posição de V invertido (quadril alto).',
+            'Desça a cabeça em direção ao chão entre as mãos.',
+            'Empurre o chão afastando os ombros.'
+        ],
+        variations: {
+            easier: ['Pike com Joelhos em Banco'],
+            harder: ['Pike com Pés Elevados', 'Handstand Push Up (HSPU)']
+        },
+        reps: '8-12',
+        sets: 3,
+        caloriesPerMinute: 8
+    },
+
+    // 2. COSTAS (PULL)
+    {
+        id: 'pull_1',
+        name: 'Remada Australiana',
+        category: ExerciseCategory.PULL,
+        muscleGroup: MuscleGroup.BACK,
+        musculosPrimarios: ['Dorsal', 'Bíceps', 'Trapézio'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/rloXYB8M3vU/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=rloXYB8M3vU',
+        description: 'Excelente para iniciar o treino de costas sem barra alta.',
+        stepByStep: [
+            'Deite-se sob uma barra baixa ou mesa robusta.',
+            'Segure na borda e mantenha o corpo reto.',
+            'Puxe o peito até a barra/mesa.'
+        ],
+        variations: {
+            easier: ['Remada na Porta (com toalha)'],
+            harder: ['Remada Australiana Unilateral', 'Pull Up (Barra Fixa)']
+        },
+        reps: '10-12',
+        sets: 3,
+        caloriesPerMinute: 7
+    },
+    {
+        id: 'pull_2',
+        name: 'Super-Homem',
+        category: ExerciseCategory.PULL,
+        muscleGroup: MuscleGroup.BACK,
+        musculosPrimarios: ['Lombar', 'Glúteos', 'Dorsal'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/z6PJMT2y8GQ/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=z6PJMT2y8GQ',
+        description: 'Fortalecimento essencial da cadeia posterior.',
+        stepByStep: [
+            'Deite de bruços no chão.',
+            'Eleve braços e pernas simultaneamente.',
+            'Segure no topo por 2 segundos e desça.'
+        ],
+        reps: '15',
+        sets: 3,
+        caloriesPerMinute: 5
+    },
+    {
+        id: 'pull_3',
+        name: 'Nadador (Swimmer)',
+        category: ExerciseCategory.PULL,
+        muscleGroup: MuscleGroup.BACK,
+        musculosPrimarios: ['Dorsal', 'Lombar', 'Ombros'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/M7W1Jqf8f1I/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=M7W1Jqf8f1I',
+        description: 'Coordenação e fortalecimento lombar.',
+        stepByStep: [
+            'Deitado de bruços, alterne braço direito com perna esquerda no ar.',
+            'Mantenha o movimento controlado como se estivesse nadando.'
+        ],
+        reps: '20 total',
+        sets: 3,
+        caloriesPerMinute: 6
+    },
+
+    // 3. PERNAS (LEGS)
+    {
+        id: 'legs_1',
+        name: 'Agachamento Livre',
+        category: ExerciseCategory.LEGS,
+        muscleGroup: MuscleGroup.LEGS,
+        musculosPrimarios: ['Quadríceps', 'Glúteos'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/aclHkVaku9U/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=aclHkVaku9U',
+        description: 'O rei dos exercícios para pernas.',
+        stepByStep: [
+            'Pés na largura dos ombros.',
+            'Desça jogando o quadril para trás, mantendo peito estufado.',
+            'Quebre a paralela (90º) se possível.',
+            'Suba empurrando o chão com o calcanhar.'
+        ],
+        variations: {
+            easier: ['Agachamento na Cadeira (Sentar e Levantar)', 'Meio Agachamento'],
+            harder: ['Agachamento com Salto', 'Pistol Squat (Unilateral)', 'Agachamento Búlgaro']
+        },
+        reps: '15-20',
+        sets: 4,
+        caloriesPerMinute: 8
+    },
+    {
+        id: 'legs_2',
+        name: 'Agachamento Sumô',
+        category: ExerciseCategory.LEGS,
+        muscleGroup: MuscleGroup.LEGS,
+        musculosPrimarios: ['Adutores', 'Glúteos', 'Quadríceps'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/9Zu2zh10f7E/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=9Zu2zh10f7E',
+        description: 'Foco na parte interna da coxa e glúteos.',
+        stepByStep: [
+            'Pés bem afastados, pontas para fora.',
+            'Mantenha o tronco o mais vertical possível.',
+            'Desça profundo e suba apertando os glúteos.'
+        ],
+        reps: '15',
+        sets: 3,
+        caloriesPerMinute: 8
+    },
+    {
+        id: 'legs_3',
+        name: 'Afundo (Lunge)',
+        category: ExerciseCategory.LEGS,
+        muscleGroup: MuscleGroup.LEGS,
+        musculosPrimarios: ['Quadríceps', 'Glúteos'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/QOVaHwm-Q6U/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=QOVaHwm-Q6U',
+        description: 'Unilateral para corrigir assimetrias.',
+        stepByStep: [
+            'Dê um passo largo à frente.',
+            'Desça até o joelho de trás quase tocar o chão.',
+            'Mantenha o tronco reto.'
+        ],
+        variations: {
+            easier: ['Afundo Estático (sem passada)', 'Afundo com Apoio'],
+            harder: ['Afundo com Salto (Jumping Lunge)', 'Afundo Búlgaro']
+        },
+        reps: '12 cada perna',
+        sets: 3,
+        caloriesPerMinute: 9
+    },
+    {
+        id: 'legs_4',
+        name: 'Elevação de Quadril',
+        category: ExerciseCategory.LEGS,
+        muscleGroup: MuscleGroup.GLUTES,
+        musculosPrimarios: ['Glúteo Máximo', 'Posterior de Coxa'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/8bbE64NuDTU/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=8bbE64NuDTU',
+        description: 'Isolamento de glúteos.',
+        stepByStep: [
+            'Deite de barriga para cima, joelhos dobrados.',
+            'Empurre o chão com os calcanhares elevando o quadril.',
+            'Contraia forte o glúteo no topo por 1 segundo.'
+        ],
+        variations: {
+            easier: ['Ponte curta'],
+            harder: ['Elevação Unilateral', 'Elevação com Pés Elevados']
+        },
+        reps: '20',
+        sets: 3,
+        caloriesPerMinute: 6
+    },
+
+    // 4. CORE & ABDÔMEN
+    {
+        id: 'core_1',
+        name: 'Prancha Abdominal',
+        category: ExerciseCategory.CORE,
+        muscleGroup: MuscleGroup.ABS,
+        musculosPrimarios: ['Transverso', 'Reto Abdominal'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/ASdvN_XEl_c/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=ASdvN_XEl_c',
+        description: 'Estabilidade total do corpo.',
+        stepByStep: [
+            'Apoie antebraços e ponta dos pés.',
+            'Mantenha o corpo em linha reta.',
+            'Contraia abdômen e glúteos para não arquear as costas.'
+        ],
+        variations: {
+            easier: ['Prancha com Joelhos', 'Prancha Alta (braços estendidos)'],
+            harder: ['Prancha Superman (braço/perna oposta)', 'Body Saw Plank']
+        },
+        durationSeconds: 45,
+        sets: 3,
+        caloriesPerMinute: 5
+    },
+    {
+        id: 'core_2',
+        name: 'Abdominal Bicicleta',
+        category: ExerciseCategory.CORE,
+        muscleGroup: MuscleGroup.ABS,
+        musculosPrimarios: ['Oblíquos', 'Reto Abdominal'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/IwyvZENrusw/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=IwyvZENrusw',
+        description: 'Um dos melhores para definir o abdômen.',
+        stepByStep: [
+            'Mãos na cabeça, pernas fora do chão.',
+            'Leve o cotovelo direito ao joelho esquerdo e vice-versa.',
+            'Movimento controlado, sem puxar o pescoço.'
+        ],
+        reps: '20 pares',
+        sets: 3,
+        caloriesPerMinute: 7
+    },
+    {
+        id: 'core_3',
+        name: 'Abdominal Infra',
+        category: ExerciseCategory.CORE,
+        muscleGroup: MuscleGroup.ABS,
+        musculosPrimarios: ['Abdômen Inferior'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/Wp4BlxcFTkE/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=Wp4BlxcFTkE',
+        description: 'Foco na "pochete" (parte inferior).',
+        stepByStep: [
+            'Deitado, mãos sob o glúteo para apoio.',
+            'Pernas esticadas, eleve até 90 graus.',
+            'Desça devagar sem tocar o chão.'
+        ],
+        variations: {
+            easier: ['Infra com Joelhos Flexionados'],
+            harder: ['Dragon Flag Negativa', 'Hanging Leg Raise (Barra)']
+        },
+        reps: '15',
+        sets: 3,
+        caloriesPerMinute: 6
+    },
+
+    // 5. CARDIO / HIIT
+    {
+        id: 'cardio_1',
+        name: 'Polichinelo',
+        category: ExerciseCategory.CARDIO,
+        muscleGroup: MuscleGroup.CARDIO,
+        musculosPrimarios: ['Corpo Inteiro', 'Panturrilha'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/c4DAnQ6DtF8/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=c4DAnQ6DtF8',
+        description: 'Aquecimento e queima de calorias.',
+        stepByStep: [
+            'Salte abrindo pernas e braços acima da cabeça.',
+            'Salte fechando pernas e braços ao lado do corpo.',
+            'Mantenha um ritmo constante.'
+        ],
+        durationSeconds: 45,
+        sets: 3,
+        caloriesPerMinute: 10
+    },
+    {
+        id: 'cardio_2',
+        name: 'Burpee',
+        category: ExerciseCategory.CARDIO,
+        muscleGroup: MuscleGroup.FULL_BODY,
+        musculosPrimarios: ['Corpo Inteiro'],
+        difficulty: ExperienceLevel.ADVANCED,
+        videoPlaceholder: 'https://img.youtube.com/vi/TU8QYVW0gDU/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=TU8QYVW0gDU',
+        description: 'O exercício mais completo para queima de gordura.',
+        stepByStep: [
+            'Agache e coloque mãos no chão.',
+            'Jogue os pés para trás (prancha).',
+            'Faça uma flexão (opcional).',
+            'Puxe os pés de volta e salte.'
+        ],
+        variations: {
+            easier: ['Sprawl (Burpee sem flexão e sem salto)', 'Burpee na Cadeira'],
+            harder: ['Burpee com Salto Duplo', 'Navy Seal Burpee']
+        },
+        reps: '10',
+        sets: 3,
+        caloriesPerMinute: 14
+    },
+    {
+        id: 'cardio_3',
+        name: 'Mountain Climber',
+        category: ExerciseCategory.CARDIO,
+        muscleGroup: MuscleGroup.ABS,
+        musculosPrimarios: ['Abdômen', 'Ombros', 'Cardio'],
+        difficulty: ExperienceLevel.INTERMEDIATE,
+        videoPlaceholder: 'https://img.youtube.com/vi/nmwgirgXLIg/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=nmwgirgXLIg',
+        description: 'Corrida na posição de prancha.',
+        stepByStep: [
+            'Posição de prancha alta.',
+            'Traga um joelho em direção ao peito.',
+            'Troque as pernas rapidamente, como se estivesse correndo.'
+        ],
+        durationSeconds: 30,
+        sets: 3,
+        caloriesPerMinute: 11
+    },
+
+    // 6. MOBILIDADE
+    {
+        id: 'mob_1',
+        name: 'Mobilidade de Quadril',
+        category: ExerciseCategory.MOBILITY,
+        muscleGroup: MuscleGroup.LEGS,
+        musculosPrimarios: ['Flexores de Quadril'],
+        difficulty: ExperienceLevel.BEGINNER,
+        videoPlaceholder: 'https://img.youtube.com/vi/UjG19rR0aO0/hqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=UjG19rR0aO0',
+        description: 'Essencial para liberar tensão de quem fica muito sentado.',
+        stepByStep: [
+            'Posição de afundo, joelho de trás no chão.',
+            'Empurre o quadril para frente.',
+            'Mantenha o tronco reto.'
+        ],
+        durationSeconds: 60,
+        sets: 2,
+        caloriesPerMinute: 3
     }
 ];
+
+// --- 30 DAY PROGRAM LOGIC ---
+// Helper to find exercise by ID (or name approximation for flexibility)
+const findEx = (namePartial: string): Exercise => {
+    const ex = EXERCISE_DATABASE.find(e => e.name.toLowerCase().includes(namePartial.toLowerCase()));
+    if (!ex) return EXERCISE_DATABASE[0]; // Fallback
+    return ex;
+}
+
+const WEEK_1_WORKOUTS = {
+    DAY_1: [findEx('Flexão Tradicional'), findEx('Flexão Aberta'), findEx('Pike'), findEx('Flexão Declinada')],
+    DAY_2: [findEx('Agachamento Livre'), findEx('Afundo'), findEx('Sumô'), findEx('Elevação de Quadril')],
+    DAY_3: [findEx('Prancha'), findEx('Infra'), findEx('Bicicleta'), findEx('Mountain')],
+    DAY_4: [findEx('Australiana'), findEx('Super-Homem'), findEx('Nadador')],
+    DAY_5: [findEx('Burpee'), findEx('Flexão Tradicional'), findEx('Agachamento Livre'), findEx('Prancha')], // Full Body
+    DAY_6: [findEx('Polichinelo'), findEx('Mountain'), findEx('Infra')], // HIIT
+    DAY_7: [findEx('Mobilidade')] // Recovery
+};
+
+export const PROGRAM_30_DAYS: Program = {
+    id: 'prog_30_toning',
+    title: 'Tonificação Total 30 Dias',
+    description: 'Transforme seu corpo usando apenas o peso corporal. Progressão inteligente de intensidade.',
+    durationWeeks: 4,
+    days: Array.from({ length: 30 }, (_, i) => {
+        const dayNum = i + 1;
+        const cycleDay = (dayNum - 1) % 7; // 0 = Seg, 1 = Ter...
+        
+        let title = '';
+        let focus = '';
+        let workout: Exercise[] = [];
+
+        // Week 1 & 2 (Standard) | Week 3 & 4 (Increased Intensity logic applied in WorkoutPlayer via sets/reps scaling)
+        switch(cycleDay) {
+            case 0: // Seg
+                title = 'Peito & Ombros'; focus = 'Push'; workout = WEEK_1_WORKOUTS.DAY_1; break;
+            case 1: // Ter
+                title = 'Pernas & Glúteos'; focus = 'Legs'; workout = WEEK_1_WORKOUTS.DAY_2; break;
+            case 2: // Qua
+                title = 'Core Blindado'; focus = 'Abs'; workout = WEEK_1_WORKOUTS.DAY_3; break;
+            case 3: // Qui
+                title = 'Costas & Postura'; focus = 'Pull'; workout = WEEK_1_WORKOUTS.DAY_4; break;
+            case 4: // Sex
+                title = 'Full Body Burn'; focus = 'Total'; workout = WEEK_1_WORKOUTS.DAY_5; break;
+            case 5: // Sab
+                title = 'HIIT Cardio'; focus = 'Sweat'; workout = WEEK_1_WORKOUTS.DAY_6; break;
+            case 6: // Dom
+                title = 'Mobilidade & Zen'; focus = 'Recovery'; workout = WEEK_1_WORKOUTS.DAY_7; break;
+        }
+
+        return {
+            day: dayNum,
+            title,
+            focus,
+            description: `Dia ${dayNum} do seu desafio. Foco em ${focus}.`,
+            workout: workout.map(ex => ({...ex})), // Clone exercises
+            completed: false
+        };
+    })
+};
 
 export const COMMUNITY_SEED_POSTS: Post[] = [
     {
         id: 'p1',
         author: 'Treinador AINS',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-        content: 'Lembre-se: Motivação é o que te faz começar. Hábito é o que te faz continuar. Bom treino a todos! 🔥',
+        content: 'Dia 15 do desafio! Quem mais está sentindo a diferença na disposição? 🔥',
         likes: 124,
         timestamp: Date.now() - 3600000,
         isLikedByMe: false
@@ -48,380 +508,16 @@ export const COMMUNITY_SEED_POSTS: Post[] = [
         id: 'p2',
         author: 'Julia Fit',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Julia',
-        content: 'Bati meu recorde no agachamento hoje! 80kg! Nunca desista dos seus objetivos.',
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop',
+        content: 'Consegui fazer minha primeira flexão estrita hoje! O progresso é real.',
         likes: 89,
         timestamp: Date.now() - 7200000,
         isLikedByMe: false
     }
 ];
 
-// Banco de Dados Massivo de Exercícios
-export const EXERCISE_DATABASE: Exercise[] = [
-  // --- PEITO (CHEST) ---
-  {
-    id: 'c1',
-    name: 'Flexão de Braço Clássica',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.ARMS, MuscleGroup.SHOULDERS, MuscleGroup.ABS],
-    musculosPrimarios: ['Peitoral Maior'],
-    musculosSecundarios: ['Tríceps Braquial', 'Deltoide Anterior', 'Serrátil Anterior'],
-    equipmentRequired: [Equipment.NONE, Equipment.HOME_BASIC, Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=IODxDxX7oi4',
-    description: 'O exercício fundamental da calistenia. Mantenha o corpo em linha reta, desça o peito até quase tocar o chão e empurre com explosão.',
-    reps: '10-15',
-    sets: 3,
-    caloriesPerMinute: 8
-  },
-  {
-    id: 'c2',
-    name: 'Supino Reto com Barra',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.ARMS, MuscleGroup.SHOULDERS],
-    musculosPrimarios: ['Peitoral Maior', 'Peitoral Menor'],
-    musculosSecundarios: ['Tríceps', 'Deltoide Anterior'],
-    equipmentRequired: [Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/rT7DgCr-3pg/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
-    description: 'O rei dos exercícios de peito na academia. Deite-se no banco, desça a barra controladamente até o meio do peito e empurre.',
-    reps: '8-12',
-    sets: 4,
-    caloriesPerMinute: 6
-  },
-  {
-    id: 'c3',
-    name: 'Supino Inclinado com Halteres',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.ARMS],
-    musculosPrimarios: ['Peitoral Maior (Porção Clavicular)'],
-    musculosSecundarios: ['Deltoide Anterior', 'Tríceps'],
-    equipmentRequired: [Equipment.HOME_BASIC, Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/8iPEnn-ltC8/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=8iPEnn-ltC8',
-    description: 'Foca na parte superior do peitoral. Ajuste o banco a 30-45 graus. Mantenha os cotovelos levemente fechados.',
-    reps: '10-12',
-    sets: 3,
-    caloriesPerMinute: 6
-  },
-  {
-    id: 'c4',
-    name: 'Flexão Diamante',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.ARMS], 
-    musculosPrimarios: ['Tríceps Braquial', 'Peitoral Maior (Interno)'],
-    musculosSecundarios: ['Deltoide Anterior'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/J0DnG1_S92I/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=J0DnG1_S92I',
-    description: 'Junte as mãos formando um diamante. Excelente para parte interna do peito e tríceps.',
-    reps: '8-12',
-    sets: 3,
-    caloriesPerMinute: 9
-  },
-  {
-    id: 'c5',
-    name: 'Crossover na Polia Alta',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.SHOULDERS],
-    musculosPrimarios: ['Peitoral Maior (Porção Inferior/Esternal)'],
-    musculosSecundarios: ['Deltoide Anterior'],
-    equipmentRequired: [Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/taI4XduLpTk/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=taI4XduLpTk',
-    description: 'Isolamento de peitoral. Mantenha o tronco estável e traga as polias à frente do corpo cruzando levemente.',
-    reps: '12-15',
-    sets: 3,
-    caloriesPerMinute: 5
-  },
-  {
-    id: 'c6',
-    name: 'Flexão Declinada (Pés Elevados)',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.ARMS],
-    musculosPrimarios: ['Peitoral Maior (Porção Superior)'],
-    musculosSecundarios: ['Deltoide Anterior', 'Tríceps'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/SKPab2YC8BE/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=SKPab2YC8BE',
-    description: 'Apoie os pés em uma cadeira ou banco. Mantenha o corpo reto e desça o peito em direção ao chão. Foca na parte superior do peitoral.',
-    reps: '10-12',
-    sets: 3,
-    caloriesPerMinute: 9
-  },
-  {
-    id: 'c7',
-    name: 'Flexão Explosiva',
-    muscleGroup: MuscleGroup.CHEST,
-    secondaryMuscles: [MuscleGroup.ARMS, MuscleGroup.CARDIO],
-    musculosPrimarios: ['Peitoral Maior', 'Tríceps Braquial'],
-    musculosSecundarios: ['Fibras de Contração Rápida', 'Deltoide Anterior'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.ADVANCED,
-    videoPlaceholder: 'https://img.youtube.com/vi/h72v81h2lVw/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=h72v81h2lVw',
-    description: 'Desça controlado e empurre o chão com força máxima para tirar as mãos do solo. Ótimo para potência.',
-    reps: '5-8',
-    sets: 3,
-    caloriesPerMinute: 12
-  },
-
-  // --- COSTAS (BACK) ---
-  {
-    id: 'b1',
-    name: 'Barra Fixa (Pull Up)',
-    muscleGroup: MuscleGroup.BACK,
-    secondaryMuscles: [MuscleGroup.ARMS, MuscleGroup.ABS],
-    musculosPrimarios: ['Latíssimo do Dorso (Grande Dorsal)'],
-    musculosSecundarios: ['Bíceps Braquial', 'Trapézio Inferior', 'Rombóides'],
-    equipmentRequired: [Equipment.NONE, Equipment.HOME_BASIC, Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.ADVANCED,
-    videoPlaceholder: 'https://img.youtube.com/vi/eGo4IYlbE5g/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
-    description: 'O melhor construtor de costas. Pegada pronada (palmas para frente). Puxe até o queixo passar a barra.',
-    reps: 'Máximo',
-    sets: 4,
-    caloriesPerMinute: 11
-  },
-  {
-    id: 'b2',
-    name: 'Remada Curvada com Barra',
-    muscleGroup: MuscleGroup.BACK,
-    secondaryMuscles: [MuscleGroup.LEGS, MuscleGroup.ARMS],
-    musculosPrimarios: ['Latíssimo do Dorso', 'Trapézio', 'Rombóides'],
-    musculosSecundarios: ['Bíceps', 'Eretores da Espinha', 'Deltoide Posterior'],
-    equipmentRequired: [Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/6FZHJGzMFEc/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=6FZHJGzMFEc',
-    description: 'Mantenha as costas retas, joelhos flexionados. Puxe a barra em direção ao umbigo.',
-    reps: '8-10',
-    sets: 4,
-    caloriesPerMinute: 8
-  },
-  {
-    id: 'b3',
-    name: 'Barra Australiana (Pegada Neutra)',
-    muscleGroup: MuscleGroup.BACK,
-    secondaryMuscles: [MuscleGroup.ARMS],
-    musculosPrimarios: ['Latíssimo do Dorso', 'Rombóides'],
-    musculosSecundarios: ['Bíceps Braquial', 'Braquiorradial'],
-    equipmentRequired: [Equipment.NONE, Equipment.HOME_BASIC],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/LHaC729k3gs/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=LHaC729k3gs',
-    description: 'Use uma barra baixa ou argolas. Mantenha o corpo reto e puxe o peito até a barra com as palmas viradas uma para a outra.',
-    reps: '10-15',
-    sets: 3,
-    caloriesPerMinute: 7
-  },
-
-  // --- PERNAS (LEGS) ---
-  {
-    id: 'l1',
-    name: 'Agachamento Livre (Bodyweight)',
-    muscleGroup: MuscleGroup.LEGS,
-    secondaryMuscles: [MuscleGroup.ABS],
-    musculosPrimarios: ['Quadríceps', 'Glúteo Máximo'],
-    musculosSecundarios: ['Isquiotibiais', 'Panturrilha', 'Core'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/aclHkVaku9U/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=aclHkVaku9U',
-    description: 'O básico essencial. Pés na largura dos ombros, desça como se fosse sentar em uma cadeira.',
-    reps: '15-20',
-    sets: 3,
-    caloriesPerMinute: 7
-  },
-  {
-    id: 'l2',
-    name: 'Agachamento com Barra (Back Squat)',
-    muscleGroup: MuscleGroup.LEGS,
-    secondaryMuscles: [MuscleGroup.BACK, MuscleGroup.ABS],
-    musculosPrimarios: ['Quadríceps', 'Glúteo Máximo'],
-    musculosSecundarios: ['Adutores', 'Isquiotibiais', 'Eretores da Espinha'],
-    equipmentRequired: [Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.ADVANCED,
-    videoPlaceholder: 'https://img.youtube.com/vi/SW_C1A-rejs/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=SW_C1A-rejs',
-    description: 'Rei dos exercícios de perna. Barra nas costas, desça até quebrar a paralela. Respire fundo para estabilizar o core.',
-    reps: '5-8',
-    sets: 4,
-    caloriesPerMinute: 10
-  },
-  {
-    id: 'l7',
-    name: 'Stiff com Barra',
-    muscleGroup: MuscleGroup.LEGS,
-    secondaryMuscles: [MuscleGroup.BACK],
-    musculosPrimarios: ['Isquiotibiais (Posterior de Coxa)', 'Glúteos'],
-    musculosSecundarios: ['Eretores da Espinha', 'Antebraço'],
-    equipmentRequired: [Equipment.FULL_GYM, Equipment.HOME_BASIC],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/CN_7cz3P-1U/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=CN_7cz3P-1U',
-    description: 'Foco em posterior de coxa e glúteo. Mantenha as pernas semi-flexionadas e desça o tronco reto.',
-    reps: '10-12',
-    sets: 3,
-    caloriesPerMinute: 7
-  },
-  {
-    id: 'l8',
-    name: 'Pistol Squat Assistido',
-    muscleGroup: MuscleGroup.LEGS,
-    secondaryMuscles: [MuscleGroup.ABS],
-    musculosPrimarios: ['Quadríceps', 'Glúteos'],
-    musculosSecundarios: ['Isquiotibiais', 'Core (Equilíbrio)'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/PZilMv71Eks/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=PZilMv71Eks',
-    description: 'Agachamento unilateral segurando em um apoio (parede ou poste) para equilíbrio. Excelente para força e mobilidade.',
-    reps: '6-8 cada',
-    sets: 3,
-    caloriesPerMinute: 9
-  },
-
-  // --- OMBROS (SHOULDERS) ---
-  {
-    id: 's1',
-    name: 'Desenvolvimento Militar',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    secondaryMuscles: [MuscleGroup.ARMS],
-    musculosPrimarios: ['Deltoide Anterior', 'Deltoide Lateral'],
-    musculosSecundarios: ['Tríceps', 'Trapézio Superior', 'Serrátil Anterior'],
-    equipmentRequired: [Equipment.HOME_BASIC, Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.INTERMEDIATE,
-    videoPlaceholder: 'https://img.youtube.com/vi/qEwKCR5JCog/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=qEwKCR5JCog',
-    description: 'Empurre os pesos acima da cabeça. Mantenha o core travado para não arquear as costas.',
-    reps: '8-12',
-    sets: 3,
-    caloriesPerMinute: 7
-  },
-  {
-    id: 's3',
-    name: 'Elevação Lateral',
-    muscleGroup: MuscleGroup.SHOULDERS,
-    secondaryMuscles: [],
-    musculosPrimarios: ['Deltoide Lateral'],
-    musculosSecundarios: ['Trapézio Superior', 'Supraespinhal'],
-    equipmentRequired: [Equipment.HOME_BASIC, Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/3VcKaXpzqRo/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
-    description: 'Crucial para ombros largos. Levante os pesos até a altura dos ombros, cotovelos levemente dobrados.',
-    reps: '12-15',
-    sets: 3,
-    caloriesPerMinute: 4
-  },
-
-  // --- BRAÇOS (ARMS) ---
-  {
-    id: 'a1',
-    name: 'Rosca Direta (Barra)',
-    muscleGroup: MuscleGroup.ARMS,
-    secondaryMuscles: [],
-    musculosPrimarios: ['Bíceps Braquial'],
-    musculosSecundarios: ['Braquial', 'Braquiorradial (Antebraço)'],
-    equipmentRequired: [Equipment.FULL_GYM, Equipment.HOME_BASIC],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/kwG2ipFRgfo/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=kwG2ipFRgfo',
-    description: 'Clássico para bíceps. Mantenha os cotovelos fixos ao lado do corpo.',
-    reps: '10-12',
-    sets: 3,
-    caloriesPerMinute: 4
-  },
-  {
-    id: 'a3',
-    name: 'Tríceps Corda (Polia)',
-    muscleGroup: MuscleGroup.ARMS,
-    secondaryMuscles: [],
-    musculosPrimarios: ['Tríceps Braquial (Cabeça Lateral e Longa)'],
-    musculosSecundarios: ['Ancôneo'],
-    equipmentRequired: [Equipment.FULL_GYM],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/kiUdbGJmcyY/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=kiUdbGJmcyY',
-    description: 'Estenda o braço para baixo, abrindo a corda no final do movimento para contração máxima.',
-    reps: '12-15',
-    sets: 3,
-    caloriesPerMinute: 4
-  },
-
-  // --- ABDÔMEN (ABS) ---
-  {
-    id: 'abs1',
-    name: 'Prancha Abdominal',
-    muscleGroup: MuscleGroup.ABS,
-    secondaryMuscles: [MuscleGroup.SHOULDERS],
-    musculosPrimarios: ['Reto Abdominal', 'Transverso do Abdômen'],
-    musculosSecundarios: ['Oblíquos', 'Ombros', 'Glúteos'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.BEGINNER,
-    videoPlaceholder: 'https://img.youtube.com/vi/ASdvN_XEl_c/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=ASdvN_XEl_c',
-    description: 'Isometria essencial. Contraia glúteos e abdômen. Não deixe o quadril cair.',
-    durationSeconds: 45,
-    sets: 3,
-    caloriesPerMinute: 4
-  },
-
-  // --- CARDIO / HIIT ---
-  {
-    id: 'hiit1',
-    name: 'Burpees',
-    muscleGroup: MuscleGroup.CARDIO,
-    secondaryMuscles: [MuscleGroup.CHEST, MuscleGroup.LEGS, MuscleGroup.ARMS],
-    musculosPrimarios: ['Corpo Inteiro (Cardiovascular)'],
-    musculosSecundarios: ['Pernas', 'Peitoral', 'Ombros', 'Core'],
-    equipmentRequired: [Equipment.NONE],
-    difficulty: ExperienceLevel.ADVANCED,
-    videoPlaceholder: 'https://img.youtube.com/vi/TU8QYVW0gDU/hqdefault.jpg',
-    videoUrl: 'https://www.youtube.com/watch?v=TU8QYVW0gDU',
-    description: 'O exercício mais completo de cardio. Agache, flexão, volte e salte.',
-    reps: '10-15',
-    sets: 4,
-    caloriesPerMinute: 14
-  }
-];
-
 export const ACHIEVEMENTS_LIST: Achievement[] = [
-    {
-        id: 'first_step',
-        title: 'Primeiro Passo',
-        description: 'Complete seu primeiro treino.',
-        icon: Medal
-    },
-    {
-        id: 'on_fire',
-        title: 'Em Chamas',
-        description: 'Complete 5 treinos no total.',
-        icon: Flame
-    },
-    {
-        id: 'warrior',
-        title: 'Guerreiro',
-        description: 'Complete 10 treinos.',
-        icon: Award
-    },
-    {
-        id: 'early_bird',
-        title: 'Madrugador',
-        description: 'Complete um treino antes das 8 da manhã.',
-        icon: Sunrise
-    },
-    {
-        id: 'consistency',
-        title: 'Consistência',
-        description: 'Treine 3 vezes em uma semana.',
-        icon: Zap
-    }
+    { id: 'first_step', title: 'Primeiro Passo', description: 'Complete seu primeiro treino.', icon: Medal },
+    { id: 'week_warrior', title: 'Guerreiro Semanal', description: 'Complete 7 dias seguidos.', icon: Flame },
+    { id: 'early_bird', title: 'Madrugador', description: 'Treino antes das 8am.', icon: Sunrise },
+    { id: 'program_finisher', title: 'Lenda', description: 'Complete o programa de 30 dias.', icon: Award }
 ];

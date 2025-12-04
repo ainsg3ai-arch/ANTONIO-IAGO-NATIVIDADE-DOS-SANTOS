@@ -1,37 +1,41 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_DATABASE } from '../constants';
-import { MuscleGroup, Exercise } from '../types';
-import { Search, Play, X, Flame, Plus, BicepsFlexed, Activity } from 'lucide-react';
+import { ExerciseCategory, Exercise } from '../types';
+import { Search, Play, X, Flame, Plus, BicepsFlexed, Activity, CheckCircle2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 
 export const Library: React.FC = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<MuscleGroup | 'Todos'>('Todos');
+  const [filter, setFilter] = useState<ExerciseCategory | 'Todos'>('Todos');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Exercise | null>(null);
 
-  const filtered = EXERCISE_DATABASE.filter(ex => {
-    const term = search.toLowerCase();
-    const matchesSearch = 
-        ex.name.toLowerCase().includes(term) || 
-        ex.musculosPrimarios?.some(m => m.toLowerCase().includes(term)) ||
-        ex.musculosSecundarios?.some(m => m.toLowerCase().includes(term));
-        
-    const matchesFilter = filter === 'Todos' || ex.muscleGroup === filter;
+  // Otimização: Filtrar apenas quando as dependências mudarem
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase().trim();
     
-    return matchesFilter && matchesSearch;
-  });
+    return EXERCISE_DATABASE.filter(ex => {
+        const matchesSearch = 
+            term === '' ||
+            ex.name.toLowerCase().includes(term) || 
+            ex.muscleGroup.toLowerCase().includes(term);
+            
+        const matchesFilter = filter === 'Todos' || ex.category === filter;
+        
+        return matchesFilter && matchesSearch;
+    });
+  }, [search, filter]);
 
   return (
-    <div className="p-6 min-h-screen bg-ains-black pb-24">
-      <h1 className="text-3xl font-display font-bold text-white uppercase mb-6">Arsenal</h1>
+    <div className="p-6 min-h-screen bg-black pb-24 font-sans">
+      <h1 className="text-3xl font-display font-bold text-white uppercase mb-6 italic">Biblioteca</h1>
       
       <div className="relative mb-6">
           <input 
-            className="w-full bg-zinc-900 border border-zinc-700 p-4 pl-12 text-white placeholder-zinc-600 focus:border-ains-primary outline-none uppercase font-bold tracking-wide rounded-sm"
-            placeholder="BUSCAR EXERCÍCIO OU MÚSCULO..."
+            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 text-white placeholder-zinc-600 focus:border-ains-primary outline-none uppercase font-bold tracking-wide rounded-xl"
+            placeholder="BUSCAR MOVIMENTO..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -39,34 +43,36 @@ export const Library: React.FC = () => {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
-          {['Todos', ...Object.values(MuscleGroup)].map(cat => (
+          {['Todos', ...Object.values(ExerciseCategory)].map(cat => (
               <button 
                 key={cat} onClick={() => setFilter(cat as any)}
-                className={`px-4 py-2 font-bold uppercase text-xs whitespace-nowrap border rounded-sm ${filter === cat ? 'bg-ains-primary border-ains-primary text-black' : 'bg-transparent border-zinc-800 text-zinc-500'}`}
+                className={`px-4 py-2 font-bold uppercase text-[10px] whitespace-nowrap border rounded-full transition-all ${filter === cat ? 'bg-white text-black border-white' : 'bg-transparent border-zinc-800 text-zinc-500'}`}
               >
-                  {cat}
+                  {cat.split('/')[0]} 
               </button>
           ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map(ex => (
-              <div key={ex.id} onClick={() => setSelected(ex)} className="bg-zinc-900 border border-zinc-800 hover:border-ains-primary/50 transition-colors cursor-pointer group flex rounded-sm overflow-hidden">
-                  <div className="w-24 bg-black relative">
-                      <img src={ex.videoPlaceholder} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"/>
-                      <div className="absolute inset-0 flex items-center justify-center"><Play size={20} className="text-white drop-shadow-md"/></div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col justify-center">
-                      <h3 className="font-display font-bold text-white uppercase leading-none mb-2 text-sm">{ex.name}</h3>
-                      <div className="flex flex-wrap gap-2">
-                          <span className="text-[10px] font-bold bg-zinc-800 text-zinc-400 px-2 py-1 uppercase">{ex.muscleGroup}</span>
-                          {ex.musculosPrimarios && ex.musculosPrimarios.length > 0 && (
-                              <span className="text-[10px] font-bold bg-ains-primary/20 text-ains-primary px-2 py-1 uppercase">{ex.musculosPrimarios[0]}</span>
-                          )}
+      <div className="grid grid-cols-1 gap-3">
+          {filtered.length > 0 ? (
+              filtered.map(ex => (
+                  <div key={ex.id} onClick={() => setSelected(ex)} className="bg-zinc-900 border border-zinc-800 active:scale-95 transition-transform cursor-pointer group flex rounded-xl overflow-hidden h-24">
+                      <div className="w-24 bg-zinc-950 relative">
+                          <img src={ex.videoPlaceholder} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity grayscale"/>
+                          <div className="absolute inset-0 flex items-center justify-center"><Play size={20} className="text-white drop-shadow-md fill-white"/></div>
+                      </div>
+                      <div className="p-4 flex-1 flex flex-col justify-center">
+                          <h3 className="font-display font-bold text-white uppercase leading-none mb-1 text-sm">{ex.name}</h3>
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">{ex.muscleGroup}</p>
+                          <div className="flex gap-2">
+                              <span className="text-[9px] font-bold bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded uppercase">{ex.category.split(' ')[0]}</span>
+                          </div>
                       </div>
                   </div>
-              </div>
-          ))}
+              ))
+          ) : (
+              <div className="text-center text-zinc-500 py-10 font-mono text-sm uppercase">Nenhum exercício encontrado.</div>
+          )}
       </div>
 
        <button 
@@ -76,53 +82,108 @@ export const Library: React.FC = () => {
           <Plus size={24} className="mr-2" />
       </button>
 
+      {/* DETAILED EXERCISE VIEW */}
       {selected && (
-          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm">
-              <div className="bg-zinc-900 border border-zinc-700 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl">
-                  <div className="relative aspect-video">
-                      <YouTubeEmbed url={selected.videoUrl} title={selected.name} placeholder={selected.videoPlaceholder} autoPlayOnLoad />
-                      <button onClick={() => setSelected(null)} className="absolute top-2 right-2 bg-black/50 p-2 text-white hover:text-red-500 transition-colors rounded-full"><X /></button>
-                  </div>
-                  <div className="p-6">
-                      <h2 className="text-2xl font-display font-bold uppercase text-white mb-4">{selected.name}</h2>
-                      
-                      <div className="flex flex-wrap gap-4 mb-6 text-sm font-mono text-zinc-400">
-                          <div className="flex items-center"><Flame size={16} className="text-orange-500 mr-2"/> {selected.caloriesPerMinute} KCAL/MIN</div>
-                          <div className="uppercase px-2 py-1 bg-zinc-800 rounded-sm font-bold">{selected.muscleGroup}</div>
-                      </div>
+          <div className="fixed inset-0 z-50 bg-black flex flex-col animate-fade-in">
+              {/* Video Header */}
+              <div className="relative h-[40vh] w-full bg-zinc-900">
+                  <YouTubeEmbed url={selected.videoUrl} title={selected.name} placeholder={selected.videoPlaceholder} autoPlayOnLoad />
+                  <button onClick={() => setSelected(null)} className="absolute top-4 right-4 bg-black/50 p-2 text-white rounded-full backdrop-blur-md z-50"><X /></button>
+              </div>
 
-                      {/* Muscle Details Section */}
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                          {selected.musculosPrimarios && selected.musculosPrimarios.length > 0 && (
-                              <div className="bg-black/30 p-3 rounded-sm border border-zinc-800">
-                                  <div className="flex items-center gap-2 text-ains-primary text-xs font-bold uppercase mb-2">
-                                      <BicepsFlexed size={14}/> Primários
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                      {selected.musculosPrimarios.map(m => (
-                                          <span key={m} className="text-xs text-white bg-zinc-800 px-2 py-1 rounded-sm border border-zinc-700">{m}</span>
-                                      ))}
-                                  </div>
-                              </div>
-                          )}
-                          
-                          {selected.musculosSecundarios && selected.musculosSecundarios.length > 0 && (
-                              <div className="bg-black/30 p-3 rounded-sm border border-zinc-800">
-                                  <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold uppercase mb-2">
-                                      <Activity size={14}/> Secundários
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                      {selected.musculosSecundarios.map(m => (
-                                          <span key={m} className="text-xs text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded-sm">{m}</span>
-                                      ))}
-                                  </div>
-                              </div>
-                          )}
-                      </div>
+              {/* Content Scroller */}
+              <div className="flex-1 overflow-y-auto p-6 bg-black text-white">
+                   <div className="mb-6">
+                        <span className="text-ains-primary text-xs font-black uppercase tracking-widest">{selected.category}</span>
+                        <h1 className="text-3xl font-display font-bold uppercase italic leading-none mt-1">{selected.name}</h1>
+                   </div>
 
-                      <p className="text-zinc-300 leading-relaxed mb-6 text-sm">{selected.description}</p>
-                      <button onClick={() => setSelected(null)} className="w-full bg-zinc-800 text-white font-bold py-4 uppercase hover:bg-zinc-700 rounded-sm transition-colors">Fechar</button>
-                  </div>
+                   {/* Stats Grid */}
+                   <div className="grid grid-cols-3 gap-2 mb-6">
+                        <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">
+                            <Flame size={18} className="text-orange-500 mx-auto mb-1"/>
+                            <span className="text-xs font-bold text-zinc-400">{selected.caloriesPerMinute || 5} cal/min</span>
+                        </div>
+                        <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">
+                            <BicepsFlexed size={18} className="text-blue-500 mx-auto mb-1"/>
+                            <span className="text-xs font-bold text-zinc-400">{selected.muscleGroup}</span>
+                        </div>
+                        <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">
+                            <Activity size={18} className="text-green-500 mx-auto mb-1"/>
+                            <span className="text-xs font-bold text-zinc-400">{selected.difficulty}</span>
+                        </div>
+                   </div>
+
+                   {/* Steps */}
+                   <div className="mb-8">
+                       <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Passo a Passo</h3>
+                       <ul className="space-y-4">
+                           {selected.stepByStep?.map((step, idx) => (
+                               <li key={idx} className="flex gap-4">
+                                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-zinc-800 text-ains-primary font-bold flex items-center justify-center text-xs border border-zinc-700">{idx + 1}</div>
+                                   <p className="text-sm text-zinc-300 leading-relaxed">{step}</p>
+                               </li>
+                           ))}
+                       </ul>
+                   </div>
+
+                    {/* VARIATIONS SECTION */}
+                   {(selected.variations?.easier || selected.variations?.harder) && (
+                        <div className="mb-8 animate-fade-in">
+                            <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Variações & Progressões</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Easier Column */}
+                                {selected.variations?.easier && (
+                                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                                        <div className="flex items-center gap-2 mb-3 text-green-400 font-bold uppercase text-[10px] tracking-wider">
+                                            <ArrowDownRight size={14} /> Mais Leve
+                                        </div>
+                                        <ul className="space-y-2">
+                                            {selected.variations.easier.map(v => (
+                                                <li key={v} className="text-xs text-zinc-300 font-medium bg-zinc-900 px-2 py-1.5 rounded border border-zinc-800">{v}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {/* Harder Column */}
+                                {selected.variations?.harder && (
+                                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                                        <div className="flex items-center gap-2 mb-3 text-red-400 font-bold uppercase text-[10px] tracking-wider">
+                                            <ArrowUpRight size={14} /> Mais Pesado
+                                        </div>
+                                        <ul className="space-y-2">
+                                            {selected.variations.harder.map(v => (
+                                                <li key={v} className="text-xs text-zinc-300 font-medium bg-zinc-900 px-2 py-1.5 rounded border border-zinc-800">{v}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                   )}
+
+                   {/* Muscles */}
+                   <div className="mb-8">
+                       <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Ativação Muscular</h3>
+                       <div className="flex flex-wrap gap-2">
+                           {selected.musculosPrimarios.map(m => (
+                               <span key={m} className="bg-ains-primary/10 text-ains-primary border border-ains-primary/30 px-3 py-1 rounded text-xs font-bold uppercase">{m}</span>
+                           ))}
+                       </div>
+                   </div>
+
+                   {/* Tips */}
+                   <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                       <h3 className="text-white font-bold uppercase text-xs mb-2 flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500"/> Dicas de Mestre</h3>
+                       <ul className="list-disc pl-4 space-y-1 text-xs text-zinc-400">
+                           {selected.commonErrors?.map((err, i) => (
+                               <li key={i}>Evite: {err}</li>
+                           ))}
+                           <li className="text-ains-primary mt-2 italic">{selected.breathingTip}</li>
+                       </ul>
+                   </div>
+
+                   <div className="h-10"></div>
               </div>
           </div>
       )}

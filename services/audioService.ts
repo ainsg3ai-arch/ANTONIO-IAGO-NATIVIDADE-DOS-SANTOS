@@ -1,37 +1,47 @@
 
+let audioCtx: AudioContext | null = null;
+let voicesLoaded = false;
+let preferredVoice: SpeechSynthesisVoice | null = null;
+
+const loadVoices = () => {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+        preferredVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) || 
+                         voices.find(v => v.lang.includes('pt-BR')) || 
+                         voices.find(v => v.lang.includes('pt'));
+        voicesLoaded = true;
+    }
+};
+
+if ('speechSynthesis' in window) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
 export const speak = (text: string) => {
     if (!('speechSynthesis' in window)) return;
-    
-    // Cancel any current speech
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Attempt to find a Portuguese Brazil voice
-    const voices = window.speechSynthesis.getVoices();
-    const ptVoice = voices.find(v => v.lang.includes('pt-BR')) || voices.find(v => v.lang.includes('pt'));
-    
-    if (ptVoice) {
-        utterance.voice = ptVoice;
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+    } else if (!voicesLoaded) {
+        loadVoices();
+        if (preferredVoice) utterance.voice = preferredVoice;
     }
     
-    utterance.rate = 1.0;
+    utterance.rate = 1.1; 
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     
     window.speechSynthesis.speak(utterance);
 };
 
-// Initialize voices (sometimes they load asynchronously)
-if ('speechSynthesis' in window) {
-    window.speechSynthesis.getVoices();
-}
-
-// --- Sound Effects System (Oscillators) ---
-
-let audioCtx: AudioContext | null = null;
 
 export const initAudio = () => {
+    // Singleton pattern critical for browser limits
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -54,32 +64,33 @@ export const playTone = (type: 'beep' | 'start' | 'success') => {
     const now = ctx.currentTime;
 
     if (type === 'beep') {
-        // High pitch beep for countdown
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(800, now);
-        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(now);
-        osc.stop(now + 0.15); // Short burst
+        osc.stop(now + 0.15); 
     } else if (type === 'start') {
-        // Rising tone
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-        gain.gain.setValueAtTime(0.05, now);
+        // Sci-fi power up
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(400, now + 0.2);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.3);
     } else if (type === 'success') {
-        // Major Chord Arpeggio
-        const plays = [523.25, 659.25, 783.99, 1046.50]; // C Major
+        const plays = [440, 554, 659]; // A Major
         plays.forEach((freq, i) => {
             const o = ctx.createOscillator();
             const g = ctx.createGain();
             o.connect(g);
             g.connect(ctx.destination);
-            
-            o.type = 'sine';
+            o.type = 'square'; 
             o.frequency.value = freq;
-            g.gain.setValueAtTime(0.05, now + i * 0.1);
+            g.gain.setValueAtTime(0, now + i * 0.1);
+            g.gain.linearRampToValueAtTime(0.05, now + i * 0.1 + 0.05);
             g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.5);
-            
             o.start(now + i * 0.1);
             o.stop(now + i * 0.1 + 0.6);
         });

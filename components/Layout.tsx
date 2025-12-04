@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Home, Dumbbell, BarChart2, User, Play, MessageSquare } from 'lucide-react';
+import { Home, User, Play, ShoppingBag, Map, Swords } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
@@ -17,34 +18,43 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return (
       <button 
         onClick={() => navigate(path)}
-        className={`flex flex-col items-center justify-center space-y-1 w-full h-full transition-colors ${isActive ? 'text-ains-primary' : 'text-zinc-600 hover:text-zinc-400'}`}
+        className={`flex flex-col items-center justify-center space-y-1 w-full h-full transition-all duration-300 relative group ${isActive ? 'text-ains-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
       >
-        <Icon size={22} strokeWidth={isActive ? 3 : 2} />
-        <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+        <div className={`transition-transform duration-300 ${isActive ? 'scale-110 -translate-y-1' : 'group-hover:-translate-y-0.5'}`}>
+            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+        </div>
+        {isActive && (
+            <span className="absolute -bottom-2 w-1 h-1 rounded-full bg-ains-primary shadow-[0_0_10px_#00AFFF]"></span>
+        )}
       </button>
     );
   };
 
   return (
-    <div className="flex flex-col h-screen bg-ains-black text-ains-text overflow-hidden font-sans selection:bg-ains-primary selection:text-black">
-      <main className="flex-1 overflow-y-auto pb-24 no-scrollbar">
+    <div className="flex flex-col h-screen bg-ains-bg text-ains-text overflow-hidden font-sans selection:bg-ains-primary selection:text-black">
+      <main className="flex-1 overflow-y-auto pb-24 no-scrollbar relative z-0">
+        {/* Background Gradients */}
+        <div className="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-b from-ains-primary/5 to-transparent pointer-events-none z-[-1]"></div>
         {children}
       </main>
 
       {!hideNav && (
-        <div className="fixed bottom-4 left-4 right-4 h-16 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl flex items-center justify-between px-2 shadow-2xl z-50">
+        <div className="fixed bottom-6 left-6 right-6 h-16 glass-panel rounded-2xl flex items-center justify-between px-2 shadow-2xl z-50">
           <NavItem path="/" icon={Home} label="Início" />
-          <NavItem path="/library" icon={Dumbbell} label="Treinos" />
+          <NavItem path="/campaign" icon={Map} label="Saga" />
           
-          <button 
-            onClick={() => navigate('/')} 
-            className="mb-8 bg-ains-primary border-4 border-black rounded-xl p-3 shadow-[0_0_20px_rgba(255,215,0,0.4)] text-black transform hover:scale-105 transition-transform hover:rotate-3"
-          >
-            <Play size={28} fill="currentColor" />
-          </button>
+          {/* Central Play Button */}
+          <div className="relative -top-6">
+              <button 
+                onClick={() => navigate('/')} 
+                className="bg-ains-primary rounded-full p-4 shadow-neon text-black transform hover:scale-105 transition-transform active:scale-95 border-4 border-ains-bg"
+              >
+                <Play size={28} fill="currentColor" className="ml-1" />
+              </button>
+          </div>
 
-          <NavItem path="/coach" icon={MessageSquare} label="Coach" />
-          <NavItem path="/profile" icon={User} label="Perfil" />
+          <NavItem path="/battle" icon={Swords} label="PvP" />
+          <NavItem path="/store" icon={ShoppingBag} label="Loja" />
         </div>
       )}
     </div>

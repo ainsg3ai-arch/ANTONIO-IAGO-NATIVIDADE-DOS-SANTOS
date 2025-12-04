@@ -6,7 +6,7 @@ import { WorkoutSession, Exercise } from '../types';
 import { Button } from '../components/Button';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { speak, playTone, initAudio } from '../services/audioService';
-import { Timer, CheckCircle, X, Info, Flame, Activity, Trophy, Share2, Camera, BicepsFlexed } from 'lucide-react';
+import { X, Info, ChevronRight, AlertCircle, Wind, Trophy, Timer, Check, SkipForward } from 'lucide-react';
 
 export const WorkoutPlayer: React.FC = () => {
   const navigate = useNavigate();
@@ -17,8 +17,6 @@ export const WorkoutPlayer: React.FC = () => {
   const [isActive, setIsActive] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [sessionCalories, setSessionCalories] = useState(0);
-  
-  // Finish State
   const [isFinished, setIsFinished] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
@@ -34,8 +32,7 @@ export const WorkoutPlayer: React.FC = () => {
     return () => clearInterval(interval);
   }, [isActive]);
 
-  // Calculate Calories
-   useEffect(() => {
+  useEffect(() => {
     if(isActive && !isResting && workout && timer > 0 && timer % 60 === 0) {
         const currentEx = workout.exercises[currentExerciseIndex];
         const burnRate = currentEx.caloriesPerMinute || 5;
@@ -43,21 +40,14 @@ export const WorkoutPlayer: React.FC = () => {
     }
   }, [timer, isActive, isResting, workout, currentExerciseIndex]);
 
-  // Beeps Countdown
-  useEffect(() => {
-      if(!workout || !isActive) return;
-      const ex = workout.exercises[currentExerciseIndex];
-      if (!isResting && ex.durationSeconds) {
-          if (ex.durationSeconds - timer <= 3 && ex.durationSeconds - timer > 0) playTone('beep');
-      }
-  }, [timer]);
-
-  // Voice Coach
   useEffect(() => {
     if(!workout || isFinished) return;
     const ex = workout.exercises[currentExerciseIndex];
-    if (isResting) speak("Descanso.");
-    else setTimeout(() => speak(ex.name), 500);
+    if (isResting) speak("Descanso. Respire fundo.");
+    else {
+        speak(ex.name);
+        if(ex.breathingTip) setTimeout(() => speak(ex.breathingTip || ""), 2000);
+    }
   }, [currentExerciseIndex, isResting, isFinished]);
 
   if (!workout) return null;
@@ -67,7 +57,6 @@ export const WorkoutPlayer: React.FC = () => {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   const finishWorkout = () => {
-      // Save final stats
       const completedWorkout = { 
           ...workout, 
           completed: true, 
@@ -76,19 +65,16 @@ export const WorkoutPlayer: React.FC = () => {
       };
       saveWorkoutSession(completedWorkout);
       saveCurrentWorkout(null);
-      
       const unlocked = checkAndUnlockAchievements();
       setNewAchievements(unlocked);
-      
       playTone('success');
-      setIsFinished(true); // Show Summary Screen
+      setIsFinished(true);
   }
 
   const handleNext = () => {
     playTone('start');
     setIsActive(false);
     
-    // Add partial calories
     if (!isResting) {
         const burnRate = currentEx.caloriesPerMinute || 5;
         const additionalCals = Math.floor((timer % 60) / 60 * burnRate);
@@ -111,126 +97,176 @@ export const WorkoutPlayer: React.FC = () => {
 
   if (isFinished) {
       return (
-          <div className="h-screen bg-ains-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
-              <div className="absolute inset-0 bg-noise opacity-30"></div>
+          <div className="h-screen bg-ains-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
               
-              {/* Share Card - Designed for Screenshots */}
-              <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 p-8 rounded-sm shadow-2xl relative z-10 text-center animate-fade-in border-t-4 border-t-ains-primary">
+              <div className="w-full max-w-sm glass-panel p-8 rounded-3xl relative z-10 text-center animate-slide-up border border-ains-primary/20">
                    <div className="flex justify-center mb-6">
-                        <div className="bg-ains-primary p-4 rounded-full shadow-[0_0_30px_rgba(255,215,0,0.4)]">
-                            <Trophy size={48} className="text-black" />
+                        <div className="p-6 rounded-full bg-ains-primary/10 border-2 border-ains-primary shadow-neon">
+                             <Trophy size={48} className="text-ains-primary" />
                         </div>
                    </div>
                    
-                   <h2 className="text-3xl font-display font-bold uppercase text-white mb-2">Treino Concluído</h2>
-                   <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-8">{new Date().toLocaleDateString()} • AINSFIT</p>
+                   <h2 className="text-4xl font-display font-bold uppercase text-white mb-2 italic tracking-tighter">Mission<br/>Complete</h2>
+                   <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-8">AINSFIT • {new Date().toLocaleDateString()}</p>
 
                    <div className="grid grid-cols-2 gap-4 mb-8">
-                       <div className="bg-black/40 p-4 rounded-sm border border-zinc-800">
-                           <div className="text-ains-primary text-2xl font-bold font-mono">{Math.floor(sessionCalories)}</div>
-                           <div className="text-[10px] text-zinc-500 uppercase font-bold">Calorias</div>
+                       <div className="bg-black/50 p-4 rounded-xl border border-white/5">
+                           <div className="text-white text-3xl font-bold font-display italic">{Math.floor(sessionCalories)}</div>
+                           <div className="text-[10px] text-ains-primary uppercase font-bold tracking-wider">Calorias</div>
                        </div>
-                       <div className="bg-black/40 p-4 rounded-sm border border-zinc-800">
-                           <div className="text-white text-2xl font-bold font-mono">{workout.exercises.length}</div>
-                           <div className="text-[10px] text-zinc-500 uppercase font-bold">Exercícios</div>
+                       <div className="bg-black/50 p-4 rounded-xl border border-white/5">
+                           <div className="text-white text-3xl font-bold font-display italic">{Math.floor(workout.durationTaken || timer / 60)}<span className="text-sm">m</span></div>
+                           <div className="text-[10px] text-ains-primary uppercase font-bold tracking-wider">Tempo</div>
                        </div>
                    </div>
 
-                   {newAchievements.length > 0 && (
-                       <div className="mb-8 animate-bounce">
-                           <div className="text-xs text-yellow-500 font-bold uppercase mb-2">Nova Conquista Desbloqueada!</div>
-                           <div className="text-lg font-display text-white">{newAchievements[0]}</div>
-                       </div>
-                   )}
-
-                   <div className="space-y-3">
-                       <Button onClick={() => navigate('/')} fullWidth>Voltar ao Início</Button>
-                       <div className="flex items-center justify-center text-zinc-600 text-xs gap-2">
-                           <Camera size={14} /> <span>Tire um print para compartilhar</span>
-                       </div>
-                   </div>
+                   <Button onClick={() => navigate('/')} fullWidth variant="primary">Continuar</Button>
               </div>
           </div>
       )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-black text-white relative font-sans">
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur">
-          <button onClick={() => { if(confirm("Sair do treino?")) { saveCurrentWorkout(null); navigate('/'); } }}><X className="text-zinc-500 hover:text-white" /></button>
-          <div className="flex flex-col items-center">
-              <span className="font-display font-bold uppercase tracking-widest text-zinc-400 text-xs">{isResting ? 'RECOVER' : `SET ${currentExerciseIndex + 1}/${workout.exercises.length}`}</span>
-              <div className="w-24 h-1 bg-zinc-800 mt-1"><div className="bg-ains-primary h-full transition-all duration-300" style={{width: `${progress}%`}}></div></div>
-          </div>
-          <button onClick={() => setShowInfo(!showInfo)} className={showInfo ? 'text-ains-primary' : 'text-zinc-500'}><Info /></button>
-      </div>
-
-      {/* Info Overlay */}
-      {showInfo && (
-          <div className="absolute top-16 left-0 w-full bg-zinc-900/95 backdrop-blur-md z-20 p-6 border-b border-ains-primary/30 animate-fade-in shadow-xl">
-              <h3 className="font-display font-bold text-xl uppercase mb-2 text-white">{currentEx.name}</h3>
-              <p className="text-zinc-400 text-sm mb-4 leading-relaxed">{currentEx.description}</p>
-              
-              <div className="flex gap-2 mb-4">
-                  <span className="px-2 py-1 bg-ains-primary text-black text-xs font-bold uppercase">{currentEx.muscleGroup}</span>
-                  <span className="px-2 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold uppercase">{currentEx.difficulty}</span>
-              </div>
-
-              {currentEx.musculosPrimarios && (
-                  <div className="mb-2">
-                      <div className="text-[10px] text-ains-primary font-bold uppercase mb-1 flex items-center gap-1"><BicepsFlexed size={12}/> Foco Principal</div>
-                      <div className="flex flex-wrap gap-1">
-                          {currentEx.musculosPrimarios.map(m => <span key={m} className="text-xs text-white bg-black/50 px-2 py-1 rounded border border-zinc-700">{m}</span>)}
-                      </div>
-                  </div>
-              )}
-          </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-          {!isResting ? (
-              <>
-                <div className="h-[40vh] bg-zinc-900 relative">
-                    <YouTubeEmbed url={currentEx.videoUrl} title={currentEx.name} placeholder={currentEx.videoPlaceholder} />
-                    <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase flex items-center shadow-lg"><Activity size={12} className="mr-1"/> LIVE</div>
-                </div>
-                <div className="flex-1 p-6 flex flex-col justify-between">
-                    <div>
-                        <h2 className="text-3xl font-display font-bold uppercase leading-none mb-2">{currentEx.name}</h2>
-                        <div className="flex items-center space-x-4 text-lg font-mono text-ains-primary">
-                            <span>{currentEx.reps || `${currentEx.durationSeconds}s`}</span>
-                            <span className="text-zinc-600">|</span>
-                            <span>{currentEx.sets} SÉRIES</span>
-                        </div>
-                         <div className="mt-2 bg-zinc-900/50 w-fit px-2 py-1 rounded border border-zinc-800 text-xs text-zinc-400">
-                                 Total: <span className="text-white font-bold">{Math.floor(sessionCalories)} kcal</span>
-                         </div>
+    <div className="h-screen flex flex-col bg-ains-bg text-white relative font-sans overflow-hidden">
+      
+      {/* EXERCISE MODE */}
+      {!isResting ? (
+          <>
+            {/* Header / Progress */}
+            <div className="absolute top-0 left-0 w-full z-20 p-6 bg-gradient-to-b from-black via-black/50 to-transparent">
+                <div className="flex justify-between items-center mb-4">
+                    <button onClick={() => { if(confirm("Abortar missão?")) { saveCurrentWorkout(null); navigate('/'); } }} className="bg-black/40 backdrop-blur p-2 rounded-full border border-white/10 hover:bg-red-500/20 hover:border-red-500 transition-colors">
+                        <X className="text-white" size={20}/>
+                    </button>
+                    <div className="flex items-center gap-2 bg-black/40 backdrop-blur px-3 py-1 rounded-full border border-white/10">
+                        <span className="text-xs font-bold font-mono text-ains-primary">{currentExerciseIndex + 1}</span>
+                        <span className="text-[10px] text-zinc-500">/</span>
+                        <span className="text-xs font-bold font-mono text-zinc-400">{workout.exercises.length}</span>
                     </div>
-                    
-                    <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm flex items-center justify-between">
-                        <span className={`text-5xl font-mono font-bold ${isActive ? 'text-white' : 'text-zinc-600'}`}>{formatTime(timer)}</span>
-                        <button onClick={() => {playTone('start'); setIsActive(!isActive)}} className={`px-6 py-2 font-bold uppercase tracking-wider text-sm ${isActive ? 'bg-zinc-800 text-white' : 'bg-ains-primary text-black'}`}>
-                            {isActive ? 'PAUSE' : 'START'}
+                    <button onClick={() => setShowInfo(!showInfo)} className="bg-black/40 backdrop-blur p-2 rounded-full border border-white/10 hover:border-ains-primary transition-colors">
+                        <Info className="text-white" size={20}/>
+                    </button>
+                </div>
+                {/* Custom Progress Bar */}
+                <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-ains-primary h-full transition-all duration-300 shadow-[0_0_10px_#00AFFF]" style={{width: `${progress}%`}}></div>
+                </div>
+            </div>
+
+            {/* Video Area */}
+            <div className="absolute inset-0 z-0 bg-zinc-900">
+                <YouTubeEmbed url={currentEx.videoUrl} title={currentEx.name} placeholder={currentEx.videoPlaceholder} className="opacity-80 grayscale-[30%] contrast-110" autoPlayOnLoad />
+                {/* Gradient Overlay Bottom */}
+                <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-ains-bg via-ains-bg/90 to-transparent pointer-events-none"></div>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="absolute bottom-0 left-0 w-full z-20 px-6 pb-8">
+                
+                <div className="mb-8 animate-slide-up">
+                    <h2 className="text-5xl font-display font-bold uppercase italic leading-[0.85] mb-2 text-transparent bg-clip-text bg-gradient-to-br from-white to-zinc-400 drop-shadow-sm">{currentEx.name}</h2>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-ains-primary text-black px-3 py-1 font-bold text-lg uppercase transform -skew-x-12">
+                            {currentEx.reps || `${currentEx.durationSeconds}s`}
+                        </div>
+                        <span className="text-zinc-400 text-sm font-bold tracking-widest uppercase border-l border-zinc-700 pl-4">{currentEx.sets} SÉRIES</span>
+                    </div>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-8">
+                    {currentEx.musculosPrimarios.slice(0, 3).map(m => (
+                        <span key={m} className="bg-white/5 backdrop-blur px-3 py-1 rounded-md text-[10px] uppercase font-bold text-ains-primary border border-ains-primary/20">{m}</span>
+                    ))}
+                </div>
+
+                {/* Main Action Bar */}
+                <div className="flex items-center gap-4">
+                    <div className="flex-1 bg-zinc-900/80 backdrop-blur border border-zinc-700 p-1 rounded-2xl flex justify-between items-center relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-ains-primary/5 group-hover:bg-ains-primary/10 transition-colors"></div>
+                        <div className="pl-6 font-mono text-4xl font-bold text-white tracking-tighter">{formatTime(timer)}</div>
+                        <button 
+                            onClick={() => {playTone('start'); setIsActive(!isActive)}} 
+                            className={`mr-2 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-wider transition-all ${isActive ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]'}`}
+                        >
+                            {isActive ? 'Pause' : 'Start'}
                         </button>
                     </div>
-
-                    <Button onClick={handleNext} fullWidth className="h-16 text-xl flex justify-between items-center px-6">
-                        <span>PRÓXIMO</span>
-                        <CheckCircle />
-                    </Button>
+                    
+                    <button 
+                        onClick={handleNext} 
+                        className="bg-ains-primary text-black w-20 h-20 rounded-2xl flex items-center justify-center shadow-neon hover:scale-105 active:scale-95 transition-transform border-4 border-ains-bg"
+                    >
+                        <Check size={36} strokeWidth={3} />
+                    </button>
                 </div>
-              </>
-          ) : (
-              <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 p-8 text-center">
-                  <span className="text-zinc-500 font-bold uppercase tracking-[0.5em] mb-8">DESCANSO</span>
-                  <div className="text-9xl font-mono font-bold text-white mb-8">{formatTime(timer)}</div>
-                  <p className="text-zinc-400 mb-8 font-mono text-sm">PRÓXIMO: <span className="text-white">{workout.exercises[currentExerciseIndex + 1]?.name || 'FIM'}</span></p>
-                  <Button onClick={handleNext} variant="outline" fullWidth>PULAR</Button>
-              </div>
-          )}
-      </div>
+            </div>
+
+            {/* Info Slide-Up */}
+            {showInfo && (
+                <div className="absolute inset-0 z-30 bg-ains-bg/95 backdrop-blur-xl p-6 overflow-y-auto animate-fade-in">
+                    <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                        <h3 className="font-display font-bold text-3xl uppercase italic text-white">Intel</h3>
+                        <button onClick={() => setShowInfo(false)} className="bg-white/10 p-2 rounded-full"><X /></button>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        <div className="bg-zinc-900 p-5 rounded-2xl border border-red-500/20">
+                             <div className="flex items-center gap-2 mb-3 text-red-500 font-bold uppercase text-xs tracking-wider"><AlertCircle size={16}/> Erros Comuns</div>
+                             <ul className="list-disc pl-4 text-sm text-zinc-300 space-y-2 leading-relaxed">
+                                 {currentEx.commonErrors?.map((e, i) => <li key={i}>{e}</li>)}
+                             </ul>
+                        </div>
+
+                         <div className="bg-zinc-900 p-5 rounded-2xl border border-blue-500/20">
+                             <div className="flex items-center gap-2 mb-3 text-blue-400 font-bold uppercase text-xs tracking-wider"><Wind size={16}/> Respiração</div>
+                             <p className="text-sm text-zinc-300 leading-relaxed">{currentEx.breathingTip}</p>
+                        </div>
+
+                        <div>
+                            <h4 className="font-bold text-zinc-500 uppercase text-xs mb-4 tracking-widest">Execução</h4>
+                            <div className="space-y-4">
+                                {currentEx.stepByStep?.map((s, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <div className="w-6 h-6 rounded-sm bg-ains-primary flex items-center justify-center text-xs font-bold text-black shrink-0 transform -skew-x-6">{i+1}</div>
+                                        <p className="text-sm text-zinc-300 leading-relaxed">{s}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+          </>
+      ) : (
+          // REST MODE (Rock Style)
+          <div className="flex-1 flex flex-col items-center justify-center bg-ains-bg p-8 relative overflow-hidden">
+               {/* Animated Background */}
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-ains-primary/10 via-transparent to-transparent opacity-50 animate-pulse-slow"></div>
+               
+               <div className="z-10 text-center w-full max-w-sm">
+                   <h2 className="text-ains-primary font-black uppercase tracking-[0.3em] text-sm mb-12 border-b border-ains-primary/30 pb-4 inline-block">Recuperação</h2>
+                   
+                   <div className="relative mb-16">
+                       <div className="text-[120px] font-display font-bold text-white leading-none tracking-tighter tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                           {formatTime(timer)}
+                       </div>
+                   </div>
+
+                   <div className="glass-panel p-6 rounded-2xl mb-8 border border-white/5">
+                       <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2 tracking-widest">Próximo Desafio</div>
+                       <div className="text-2xl font-display font-bold text-white uppercase italic truncate">
+                           {workout.exercises[currentExerciseIndex + 1]?.name || "FINALIZAR"}
+                       </div>
+                   </div>
+
+                   <Button onClick={handleNext} variant="outline" fullWidth className="border-zinc-700 text-zinc-400 hover:text-white hover:border-white">
+                       <SkipForward size={18} className="mr-2"/> Pular Descanso
+                   </Button>
+               </div>
+          </div>
+      )}
     </div>
   );
 };

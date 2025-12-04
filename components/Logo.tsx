@@ -17,31 +17,23 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 48, showText 
         viewBox="0 0 100 100" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
-        className="drop-shadow-[0_0_15px_rgba(163,230,53,0.3)]"
+        className="drop-shadow-[0_0_25px_rgba(0,175,255,0.4)]"
       >
-        {/* Background Hexagon Shape (Subtle) */}
-        <path 
-          d="M50 5 L93.3 30 V80 L50 105 L6.7 80 V30 L50 5Z" 
-          fill="#27272a" 
-          opacity="0.5"
-          transform="scale(0.9) translate(5, -2)"
-        />
-        
         {/* Main "A" / Arrow Shape */}
         <path 
           d="M50 15 L85 85 H15 L50 15Z" 
-          stroke="#a3e635" 
+          stroke="#00AFFF" 
           strokeWidth="8" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
+          strokeLinecap="square" 
+          strokeLinejoin="miter"
         />
         
         {/* Energy Bolt Cutout / Center Detail */}
         <path 
           d="M50 35 V65 M35 65 L65 65" 
-          stroke="#a3e635" 
+          stroke="#00AFFF" 
           strokeWidth="6" 
-          strokeLinecap="round"
+          strokeLinecap="square"
         />
         
         {/* Dynamic Dot */}
@@ -51,10 +43,10 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 48, showText 
       {/* Text Wordmark */}
       {showText && (
         <div className="mt-3 flex flex-col items-center">
-          <h1 className="text-3xl font-black tracking-tighter text-white italic" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <h1 className="text-3xl font-black tracking-tighter text-white italic transform -skew-x-6" style={{ fontFamily: 'Oswald, sans-serif' }}>
             AINS<span className="text-ains-primary">FIT</span>
           </h1>
-          <div className="h-1 w-12 bg-ains-primary rounded-full mt-1"></div>
+          <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-ains-primary to-transparent mt-1"></div>
         </div>
       )}
     </div>

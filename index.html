@@ -1,11 +1,12 @@
+
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <title>AINSFIT</title>
     <meta name="description" content="Offline AI Fitness Trainer" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#050505" />
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,36 +16,79 @@
           extend: {
             colors: {
               ains: {
-                black: '#000000', // Absolute Black
-                dark: '#0C0C0C',  // Carbon
-                card: '#18181b',  // Gunmetal
-                primary: '#FFD700', // Gold Metallic
-                secondary: '#B8860B', // Dark Gold
-                text: '#EDEDED', // Off White
-                muted: '#525252', // Neutral Grey
-                accent: '#E50914', // Rock Red
+                bg: '#050505',      // Deepest Black
+                surface: '#121212', // Graphite
+                card: '#1C1C1E',    // Metal
+                primary: '#00AFFF', // Electric Blue (Tech/Energy)
+                secondary: '#005F87', // Deep Blue
+                accent: '#FF0033',  // Neon Red (Intensity/Rock)
+                text: '#F2F2F2',    // Off White
+                muted: '#525252',   // Concrete Grey
               }
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              display: ['Oswald', 'sans-serif'], // Strong headers
+              display: ['Oswald', 'sans-serif'], // Headers
               mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
             },
             backgroundImage: {
-                'noise': "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.05%22/%3E%3C/svg%3E')",
+                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                'metal': "linear-gradient(145deg, #1c1c1e, #121212)",
+            },
+            boxShadow: {
+                'neon': '0 0 20px rgba(0, 175, 255, 0.3)',
+                'neon-red': '0 0 20px rgba(255, 0, 51, 0.3)',
+                'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+            },
+            animation: {
+                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'slide-up': 'slideUp 0.3s ease-out forwards',
+                'fade-in': 'fadeIn 0.4s ease-out forwards',
+            },
+            keyframes: {
+                slideUp: {
+                    '0%': { transform: 'translateY(20px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
+                },
+                fadeIn: {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                }
             }
           }
         }
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Oswald:wght@500;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Oswald:wght@500;700&display=swap');
 
       body {
-        background-color: #000000;
-        color: #EDEDED;
+        background-color: #050505;
+        color: #F2F2F2;
         overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
       }
+      
+      /* Smooth Scrolling & Scrollbar Hiding */
+      ::-webkit-scrollbar { display: none; width: 0px; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      /* Utility Classes for Aesthetics */
+      .glass-panel {
+          background: rgba(28, 28, 30, 0.6);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      
+      .text-glow {
+          text-shadow: 0 0 10px rgba(0, 175, 255, 0.5);
+      }
+
+      .clip-diagonal {
+          clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%);
+      }
+      
       .bg-noise {
           position: fixed;
           top: 0;
@@ -53,19 +97,8 @@
           height: 100vh;
           pointer-events: none;
           z-index: 50;
-          background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.04%22/%3E%3C/svg%3E');
-      }
-      /* Hide scrollbar */
-      ::-webkit-scrollbar {
-        width: 0px;
-        background: transparent;
-      }
-      @keyframes fade-in {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fade-in {
-        animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0.04;
+          background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');
       }
     </style>
 <script type="importmap">

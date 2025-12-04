@@ -1,10 +1,10 @@
 
-
 export enum Goal {
   LOSE_WEIGHT = 'Perder Peso',
-  BUILD_MUSCLE = 'Ganhar Massa',
-  IMPROVE_ENDURANCE = 'Melhorar Resistência',
-  FLEXIBILITY = 'Flexibilidade',
+  BUILD_MUSCLE = 'Definição Muscular',
+  IMPROVE_ENDURANCE = 'Resistência',
+  FLEXIBILITY = 'Mobilidade & Flexibilidade',
+  TONING = 'Tonificação Total'
 }
 
 export enum ExperienceLevel {
@@ -13,10 +13,14 @@ export enum ExperienceLevel {
   ADVANCED = 'Avançado',
 }
 
-export enum Equipment {
-  NONE = 'Peso do Corpo',
-  HOME_BASIC = 'Halteres e Elásticos',
-  FULL_GYM = 'Academia Completa',
+export enum ExerciseCategory {
+  PUSH = 'Empurrar (Push)',
+  PULL = 'Puxar (Pull)',
+  LEGS = 'Pernas',
+  CORE = 'Core/Abdômen',
+  CARDIO = 'Cardio/Funcional',
+  MOBILITY = 'Mobilidade/Alongamento',
+  FULL_BODY = 'Corpo Inteiro'
 }
 
 export enum MuscleGroup {
@@ -27,7 +31,9 @@ export enum MuscleGroup {
   ARMS = 'Braços',
   ABS = 'Abdômen',
   CARDIO = 'Cardio',
-  FLEXIBILITY = 'Flexibilidade',
+  GLUTES = 'Glúteos',
+  CALVES = 'Panturrilhas',
+  FULL_BODY = 'Corpo Inteiro'
 }
 
 export enum Injury {
@@ -45,6 +51,13 @@ export enum CoachStyle {
   STOIC = 'Filósofo Estoico'
 }
 
+export enum Equipment {
+  NONE = 'Bodyweight',
+  DUMBBELL = 'Halteres',
+  BARBELL = 'Barra',
+  BAND = 'Elástico'
+}
+
 export type Gender = 'male' | 'female';
 
 export interface UserProfile {
@@ -55,51 +68,42 @@ export interface UserProfile {
   height: number;
   goal: Goal;
   level: ExperienceLevel;
-  equipment: Equipment;
+  equipment: string; // Simplificado para "Bodyweight"
   injuries: Injury[];
   coachStyle: CoachStyle;
-  workoutDuration: number; // minutes
-  workoutFrequency: number; // days per week
+  workoutDuration: number;
+  workoutFrequency: number;
   onboarded: boolean;
-  tiktokConnected?: boolean;
-  tiktokUsername?: string;
-  isTrainer?: boolean;
-}
-
-export interface TikTokVideo {
-    id: string;
-    url: string;
-    title: string;
-    thumbnail: string;
-    likes: number;
-    views: number;
-    author: string;
-    datePosted: number;
+  xp: number;
+  coins: number;
+  campaignProgress: number; // Current Day in Program
+  equippedSkin?: string;
 }
 
 export interface Exercise {
   id: string;
   name: string;
-  muscleGroup: MuscleGroup; // Categoria Geral
-  secondaryMuscles?: MuscleGroup[]; // Categoria Geral Secundária
-  
-  // Novos campos para detalhamento específico
-  musculosPrimarios?: string[]; // Ex: "Peitoral Maior", "Vasto Lateral"
-  musculosSecundarios?: string[]; // Ex: "Tríceps Braquial", "Deltoide Anterior"
-
-  equipmentRequired: Equipment[];
+  category: ExerciseCategory;
+  muscleGroup: MuscleGroup;
+  musculosPrimarios: string[];
+  musculosSecundarios?: string[];
   difficulty: ExperienceLevel;
   videoPlaceholder: string;
-  videoUrl: string;
+  videoUrl: string; // Vertical video preference
   description: string;
-  tips?: string[];
-  commonErrors?: string[];
+  stepByStep: string[]; // New: Detailed steps
+  commonErrors?: string[]; // New: Common mistakes
+  breathingTip?: string; // New: Breathing guide
+  variations?: { // New: Progressions and Regressions
+      easier?: string[];
+      harder?: string[];
+  };
   reps?: string;
   sets?: number;
   durationSeconds?: number;
   caloriesPerMinute?: number;
   contraindications?: Injury[];
-  tiktokVideoId?: string;
+  equipmentRequired?: string[];
 }
 
 export interface WorkoutSession {
@@ -111,13 +115,24 @@ export interface WorkoutSession {
   durationTaken?: number;
   caloriesBurned?: number;
   notes?: string;
+  isProgramWorkout?: boolean;
 }
 
-export interface WorkoutTemplate {
+export interface ProgramDay {
+    day: number;
+    title: string;
+    focus: string;
+    description: string;
+    workout: Exercise[]; // List of exercises for this day
+    completed: boolean;
+}
+
+export interface Program {
     id: string;
-    name: string;
-    exercises: Exercise[];
-    createdAt: number;
+    title: string;
+    description: string;
+    durationWeeks: number;
+    days: ProgramDay[];
 }
 
 export interface HabitLog {
@@ -136,22 +151,6 @@ export interface MeasurementLog {
     arms?: number;
     legs?: number;
     photoFront?: string;
-}
-
-export interface PhotoEntry {
-    id: string;
-    date: number;
-    url: string; // Base64
-    type: 'front' | 'side' | 'back';
-    notes?: string;
-}
-
-export interface Student {
-    id: string;
-    name: string;
-    goal: Goal;
-    lastWorkout: number;
-    status: 'active' | 'inactive';
 }
 
 export interface Post {
@@ -184,20 +183,24 @@ export interface ChatMessage {
   timestamp: number;
 }
 
-export interface Challenge {
+export interface StoreItem {
     id: string;
-    title: string;
-    goalDescription: string;
-    targetValue: number;
-    currentValue: number;
-    unit: 'workouts' | 'minutes' | 'calories';
-    deadline: number; 
+    name: string;
+    type: 'skin' | 'theme';
+    cost: number;
+    preview: string;
+    description: string;
 }
 
-export interface RecoverySession {
+export interface InventoryItem {
     id: string;
-    title: string;
-    type: 'stretching' | 'mobility' | 'meditation';
-    durationMinutes: number;
-    description: string;
+    itemId: string;
+    acquiredAt: number;
+}
+
+export interface WorkoutTemplate {
+    id: string;
+    name: string;
+    exercises: Exercise[];
+    createdAt: number;
 }
