@@ -7,8 +7,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // Configurações padrão do Rollup para evitar erros de chunking
     rollupOptions: {
-      // Simplificado para evitar erros de dependência circular ou CommonJS no Vercel
       output: {
         manualChunks: undefined
       }
