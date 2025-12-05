@@ -7,13 +7,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // Otimizações para evitar chunks muito grandes no deploy
     rollupOptions: {
+      // Simplificado para evitar erros de dependência circular ou CommonJS no Vercel
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
-          utils: ['uuid']
-        }
+        manualChunks: undefined
       }
     }
   },

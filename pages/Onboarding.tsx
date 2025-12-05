@@ -11,10 +11,25 @@ export const Onboarding: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isEditMode = searchParams.get('mode') === 'edit';
   const [step, setStep] = useState(isEditMode ? 1 : 0); 
+  
+  // Inicialização completa para evitar erros de tipagem estrita
   const [profile, setProfile] = useState<Partial<UserProfile>>({
-    name: '', age: 25, weight: 70, height: 175, goal: Goal.LOSE_WEIGHT, level: ExperienceLevel.BEGINNER,
-    equipment: Equipment.NONE, injuries: [Injury.NONE], coachStyle: CoachStyle.FRIENDLY,
-    workoutDuration: 45, workoutFrequency: 3
+    name: '', 
+    age: 25, 
+    weight: 70, 
+    height: 175, 
+    goal: Goal.LOSE_WEIGHT, 
+    level: ExperienceLevel.BEGINNER,
+    equipment: Equipment.NONE, 
+    injuries: [Injury.NONE], 
+    coachStyle: CoachStyle.FRIENDLY,
+    workoutDuration: 45, 
+    workoutFrequency: 3,
+    gender: 'male', // Default
+    xp: 0,
+    coins: 0,
+    campaignProgress: 1,
+    onboarded: false
   });
 
   useEffect(() => {
@@ -26,7 +41,17 @@ export const Onboarding: React.FC = () => {
   const handleNext = () => {
     if (step < 8) setStep(step + 1);
     else {
-      saveProfile({ ...profile, onboarded: true } as UserProfile);
+      // Garantir que todos os campos obrigatórios existam ao salvar
+      const finalProfile: UserProfile = {
+          ...profile,
+          gender: profile.gender || 'male',
+          xp: profile.xp || 0,
+          coins: profile.coins || 0,
+          campaignProgress: profile.campaignProgress || 1,
+          onboarded: true
+      } as UserProfile;
+
+      saveProfile(finalProfile);
       navigate(isEditMode ? '/profile' : '/');
     }
   };
