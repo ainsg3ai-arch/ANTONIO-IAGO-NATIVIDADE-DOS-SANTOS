@@ -1,5 +1,5 @@
 
-import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem } from '../types';
+import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem } from '../types';
 import { STORE_ITEMS, PROGRAM_30_DAYS } from '../constants';
 
 const KEYS = {
@@ -10,7 +10,8 @@ const KEYS = {
   ACHIEVEMENTS: 'ainsfit_achievements',
   TEMPLATES: 'ainsfit_templates',
   INVENTORY: 'ainsfit_inventory',
-  PROGRAM_STATUS: 'ainsfit_program_status' // New key
+  PROGRAM_STATUS: 'ainsfit_program_status',
+  NUTRITION_LOGS: 'ainsfit_nutrition_logs' // New Key
 };
 
 export const saveProfile = (profile: UserProfile): void => {
@@ -195,6 +196,44 @@ export const deleteTemplate = (id: string) => {
     localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(templates));
 }
 
+// --- Nutrition Logs ---
+
+export const getNutritionLogs = (): DailyNutritionLog[] => {
+    const data = localStorage.getItem(KEYS.NUTRITION_LOGS);
+    return data ? JSON.parse(data) : [];
+}
+
+export const getDailyNutrition = (date: string): DailyNutritionLog => {
+    const logs = getNutritionLogs();
+    const log = logs.find(l => l.date === date);
+    return log || { date, items: [] };
+}
+
+export const addMealItem = (item: MealItem) => {
+    const date = new Date().toISOString().split('T')[0];
+    const logs = getNutritionLogs();
+    const index = logs.findIndex(l => l.date === date);
+    
+    if (index >= 0) {
+        logs[index].items.push(item);
+    } else {
+        logs.push({ date, items: [item] });
+    }
+    
+    localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
+    addXP(5); // Small reward for tracking
+}
+
+export const removeMealItem = (itemId: string, date: string) => {
+    const logs = getNutritionLogs();
+    const index = logs.findIndex(l => l.date === date);
+    
+    if (index >= 0) {
+        logs[index].items = logs[index].items.filter(i => i.id !== itemId);
+        localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
+    }
+}
+
 // --- Data Backup & Restore ---
 
 export const exportData = () => {
@@ -206,6 +245,7 @@ export const exportData = () => {
         templates: getTemplates(),
         inventory: getInventory(),
         program: getProgramStatus(),
+        nutrition: getNutritionLogs(),
         timestamp: Date.now()
     };
     
@@ -231,6 +271,7 @@ export const importData = async (file: File): Promise<boolean> => {
         if (data.templates) localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(data.templates));
         if (data.inventory) localStorage.setItem(KEYS.INVENTORY, JSON.stringify(data.inventory));
         if (data.program) localStorage.setItem(KEYS.PROGRAM_STATUS, JSON.stringify(data.program));
+        if (data.nutrition) localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(data.nutrition));
         
         return true;
     } catch (e) {

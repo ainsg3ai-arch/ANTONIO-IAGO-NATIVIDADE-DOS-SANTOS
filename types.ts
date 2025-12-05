@@ -204,3 +204,19 @@ export interface WorkoutTemplate {
     exercises: Exercise[];
     createdAt: number;
 }
+
+// Nutrition Types
+export interface MealItem {
+    id: string;
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    icon: string;
+}
+
+export interface DailyNutritionLog {
+    date: string; // YYYY-MM-DD
+    items: MealItem[];
+}

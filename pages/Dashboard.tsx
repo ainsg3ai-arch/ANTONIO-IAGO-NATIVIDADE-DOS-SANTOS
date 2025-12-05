@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, ProgramDay, ExerciseCategory } from '../types';
-import { getProfile, getHistory, saveCurrentWorkout, getProgramStatus } from '../services/storageService';
+import { getProfile, getHistory, saveCurrentWorkout, getProgramStatus, getDailyNutrition } from '../services/storageService';
 import { generateUUID } from '../services/aiLogic';
 import { PROGRAM_30_DAYS, EXERCISE_DATABASE } from '../constants';
-import { Flame, Play, ChevronRight, Activity, Dumbbell, Zap, TrendingUp } from 'lucide-react';
+import { Flame, Play, Activity, Dumbbell, Zap, Utensils, Bot, Wrench } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [todayProgramWorkout, setTodayProgramWorkout] = useState<ProgramDay | null>(null);
   const [lotd, setLotd] = useState<any>(null); // Workout of the Day
+  const [dailyCals, setDailyCals] = useState(0);
 
   useEffect(() => {
     const p = getProfile();
@@ -32,6 +33,12 @@ export const Dashboard: React.FC = () => {
         intensity: 'Alta',
         exercises: randomExs
     });
+
+    // Load Nutrition Summary
+    const today = new Date().toISOString().split('T')[0];
+    const nLog = getDailyNutrition(today);
+    const cals = nLog.items.reduce((acc, i) => acc + i.calories, 0);
+    setDailyCals(cals);
 
   }, [navigate]);
 
@@ -123,6 +130,31 @@ export const Dashboard: React.FC = () => {
                   </div>
               </div>
               <Activity className="text-ains-primary opacity-50" size={24} />
+          </div>
+
+          {/* NEW UTILITIES GRID (Nutrition, Coach, Tools) */}
+          <div className="grid grid-cols-3 gap-3">
+              <button onClick={() => navigate('/nutrition')} className="bg-ains-card border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-green-500 hover:bg-green-500/10 transition-all group">
+                  <div className="bg-green-500/20 p-3 rounded-full text-green-500 group-hover:scale-110 transition-transform"><Utensils size={20}/></div>
+                  <div className="text-center">
+                      <span className="text-xs font-bold text-white block uppercase mb-1">Nutrição</span>
+                      <span className="text-[10px] text-zinc-500 font-mono bg-black/50 px-2 py-0.5 rounded">{dailyCals} kcal</span>
+                  </div>
+              </button>
+              <button onClick={() => navigate('/coach')} className="bg-ains-card border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-ains-primary hover:bg-ains-primary/10 transition-all group">
+                  <div className="bg-ains-primary/20 p-3 rounded-full text-ains-primary group-hover:scale-110 transition-transform"><Bot size={20}/></div>
+                  <div className="text-center">
+                      <span className="text-xs font-bold text-white block uppercase mb-1">Coach IA</span>
+                      <span className="text-[10px] text-zinc-500 font-mono bg-black/50 px-2 py-0.5 rounded">Chat</span>
+                  </div>
+              </button>
+              <button onClick={() => navigate('/tools')} className="bg-ains-card border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all group">
+                  <div className="bg-yellow-500/20 p-3 rounded-full text-yellow-500 group-hover:scale-110 transition-transform"><Wrench size={20}/></div>
+                  <div className="text-center">
+                      <span className="text-xs font-bold text-white block uppercase mb-1">Tools</span>
+                      <span className="text-[10px] text-zinc-500 font-mono bg-black/50 px-2 py-0.5 rounded">Calc</span>
+                  </div>
+              </button>
           </div>
 
           {/* WORKOUT OF THE DAY (LOTD) */}
