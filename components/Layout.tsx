@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Home, User, Play, ShoppingBag, Map, Swords } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';

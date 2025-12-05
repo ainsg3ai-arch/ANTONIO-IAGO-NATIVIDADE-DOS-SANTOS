@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_DATABASE } from '../constants';
 import { ExerciseCategory, Exercise } from '../types';
-import { Search, Play, X, Flame, Plus, BicepsFlexed, Activity, CheckCircle2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Search, Play, X, Flame, Plus, Dumbbell, Activity, CheckCircle2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 
 export const Library: React.FC = () => {
@@ -105,7 +104,7 @@ export const Library: React.FC = () => {
                             <span className="text-xs font-bold text-zinc-400">{selected.caloriesPerMinute || 5} cal/min</span>
                         </div>
                         <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">
-                            <BicepsFlexed size={18} className="text-blue-500 mx-auto mb-1"/>
+                            <Dumbbell size={18} className="text-blue-500 mx-auto mb-1"/>
                             <span className="text-xs font-bold text-zinc-400">{selected.muscleGroup}</span>
                         </div>
                         <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">

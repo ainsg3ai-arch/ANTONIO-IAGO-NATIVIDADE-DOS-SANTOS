@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
   <head>
@@ -8,7 +7,7 @@
     <meta name="description" content="Offline AI Fitness Trainer" />
     <meta name="theme-color" content="#050505" />
     
-    <!-- Tailwind via CDN (Mantido para simplicidade sem configuração de PostCSS) -->
+    <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -29,7 +28,7 @@
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              display: ['Oswald', 'sans-serif'], // Headers
+              display: ['Oswald', 'sans-serif'],
               mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
             },
             backgroundImage: {
@@ -70,11 +69,9 @@
         -webkit-tap-highlight-color: transparent;
       }
       
-      /* Smooth Scrolling & Scrollbar Hiding */
       ::-webkit-scrollbar { display: none; width: 0px; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
-      /* Utility Classes for Aesthetics */
       .glass-panel {
           background: rgba(28, 28, 30, 0.6);
           backdrop-filter: blur(12px);
@@ -105,14 +102,14 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react": "https://aistudiocdn.com/react@^19.2.1",
-    "vite": "https://aistudiocdn.com/vite@^7.2.6",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.10.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
     "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0"
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.10.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>

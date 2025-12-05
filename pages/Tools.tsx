@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, Calculator, Activity, Dumbbell, Ruler } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

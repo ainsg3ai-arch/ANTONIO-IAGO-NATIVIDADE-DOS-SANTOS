@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getProfile } from '../services/storageService';
 import { UserProfile } from '../types';
