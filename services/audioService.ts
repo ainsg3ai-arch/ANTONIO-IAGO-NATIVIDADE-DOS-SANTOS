@@ -7,6 +7,7 @@ const loadVoices = () => {
     if (!('speechSynthesis' in window)) return;
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
+        // Tenta pegar Google Portugues, depois qualquer pt-BR, depois qualquer pt
         preferredVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) || 
                          voices.find(v => v.lang.includes('pt-BR')) || 
                          voices.find(v => v.lang.includes('pt'));
@@ -21,6 +22,8 @@ if ('speechSynthesis' in window) {
 
 export const speak = (text: string) => {
     if (!('speechSynthesis' in window)) return;
+    
+    // Cancel any current speech to avoid queue buildup
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
@@ -28,11 +31,12 @@ export const speak = (text: string) => {
     if (preferredVoice) {
         utterance.voice = preferredVoice;
     } else if (!voicesLoaded) {
+        // Tenta carregar novamente se ainda não carregou
         loadVoices();
         if (preferredVoice) utterance.voice = preferredVoice;
     }
     
-    utterance.rate = 1.1; 
+    utterance.rate = 1.1; // Levemente mais rápido para treino
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     
@@ -41,7 +45,6 @@ export const speak = (text: string) => {
 
 
 export const initAudio = () => {
-    // Singleton pattern critical for browser limits
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -64,6 +67,7 @@ export const playTone = (type: 'beep' | 'start' | 'success') => {
     const now = ctx.currentTime;
 
     if (type === 'beep') {
+        // High pitch beep for countdown
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, now);
         gain.gain.setValueAtTime(0.1, now);
@@ -71,26 +75,31 @@ export const playTone = (type: 'beep' | 'start' | 'success') => {
         osc.start(now);
         osc.stop(now + 0.15); 
     } else if (type === 'start') {
-        // Sci-fi power up
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, now);
-        osc.frequency.linearRampToValueAtTime(400, now + 0.2);
+        // Rising tone (Sci-fi style)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.2);
         gain.gain.setValueAtTime(0.1, now);
         gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.3);
     } else if (type === 'success') {
+        // Victory Chord
         const plays = [440, 554, 659]; // A Major
         plays.forEach((freq, i) => {
             const o = ctx.createOscillator();
             const g = ctx.createGain();
             o.connect(g);
             g.connect(ctx.destination);
-            o.type = 'square'; 
+            
+            o.type = 'square'; // Mais "gamey"
             o.frequency.value = freq;
+            
+            // Envelope ADSR simples
             g.gain.setValueAtTime(0, now + i * 0.1);
             g.gain.linearRampToValueAtTime(0.05, now + i * 0.1 + 0.05);
             g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.5);
+            
             o.start(now + i * 0.1);
             o.stop(now + i * 0.1 + 0.6);
         });

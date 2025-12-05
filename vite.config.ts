@@ -6,6 +6,18 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: false
+    sourcemap: false,
+    // Otimizações para evitar chunks muito grandes no deploy
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+          utils: ['uuid']
+        }
+      }
+    }
+  },
+  server: {
+    host: true
   }
 });
