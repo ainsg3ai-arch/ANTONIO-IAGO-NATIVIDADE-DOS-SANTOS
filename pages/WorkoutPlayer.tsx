@@ -1,406 +1,334 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentWorkout, saveWorkoutSession, saveCurrentWorkout, checkAndUnlockAchievements, saveSetResult, getPersonalBest } from '../services/storageService';
-import { WorkoutSession } from '../types';
+import { getCurrentWorkout, saveWorkoutSession, saveCurrentWorkout, checkAndUnlockAchievements, saveSetResult, getPersonalBest, getProfile } from '../services/storageService';
+import { WorkoutSession, UserProfile } from '../types';
 import { Button } from '../components/Button';
 import { VideoPlayer } from '../components/VideoPlayer';
+import { AICamera } from '../components/AICamera';
 import { speak, playTone, initAudio } from '../services/audioService';
-import { X, Info, ChevronRight, ChevronLeft, AlertCircle, Wind, Trophy, Timer, Check, Pause, Play, RotateCcw, Save } from 'lucide-react';
+import { X, Info, ChevronRight, AlertCircle, Wind, Trophy, Timer, Check, Pause, Play, Camera, Eye, Vibrate, Zap } from 'lucide-react';
 
 export const WorkoutPlayer: React.FC = () => {
   const navigate = useNavigate();
   const [workout, setWorkout] = useState<WorkoutSession | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  
+  // Estados do Flow
   const [isResting, setIsResting] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(false); // Timer rodando?
   const [showInfo, setShowInfo] = useState(false);
-  const [sessionCalories, setSessionCalories] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   
-  // Log States
+  // AI & Smart Features
+  const [showCamera, setShowCamera] = useState(false);
   const [repsDone, setRepsDone] = useState('');
   const [currentPR, setCurrentPR] = useState(0);
-  const [isNewPR, setIsNewPR] = useState(false);
-  const [logSaved, setLogSaved] = useState(false);
+  const [sessionCalories, setSessionCalories] = useState(0);
 
-  // Ref para o Timer para evitar problemas de stale closure do setInterval
-  const timerRef = useRef<number | null>(null);
+  // Timer Ref (Crucial para corrigir o bug de Start/Stop)
+  const timerIntervalRef = useRef<number | null>(null);
 
+  // Inicialização
   useEffect(() => {
     const w = getCurrentWorkout();
-    if (!w) navigate('/');
-    else { 
+    const p = getProfile();
+    if (!w) {
+        navigate('/');
+    } else { 
         setWorkout(w); 
+        setProfile(p);
         initAudio(); 
         setTimer(0);
     }
-  }, [navigate]);
+    return () => stopTimer();
+  }, []);
 
-  // Carregar PR quando mudar de exercício
+  // Monitorar mudança de exercício para carregar PR
   useEffect(() => {
       if(workout) {
           const exId = workout.exercises[currentExerciseIndex].id;
-          const best = getPersonalBest(exId);
-          setCurrentPR(best);
-          setIsNewPR(false);
-          setLogSaved(false);
-          // Suggest reps based on exercise definition
-          const suggested = workout.exercises[currentExerciseIndex].reps?.split('-')[1] || workout.exercises[currentExerciseIndex].reps?.split('-')[0] || '10';
-          setRepsDone(suggested.replace(/[^0-9]/g, ''));
+          setCurrentPR(getPersonalBest(exId));
+          // Sugestão inicial de reps
+          const suggested = workout.exercises[currentExerciseIndex].reps?.replace(/[^0-9]/g, '') || '10';
+          setRepsDone(suggested);
       }
   }, [currentExerciseIndex, workout]);
 
-  // Lógica Robusta de Timer
-  useEffect(() => {
-    if (isActive) {
-        timerRef.current = window.setInterval(() => {
-            setTimer(t => t + 1);
-        }, 1000);
-    } else {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    }
-    return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isActive]);
+  // --- LÓGICA DO TIMER (Robustness Fix) ---
+  const startTimer = () => {
+      if (timerIntervalRef.current) return; // Já está rodando
+      
+      playTone('start');
+      setIsActive(true);
+      
+      // Haptic Feedback (Modo Silencioso)
+      if (navigator.vibrate) navigator.vibrate(200);
 
-  // Calories Logic
-  useEffect(() => {
-    if(isActive && !isResting && workout && timer > 0 && timer % 60 === 0) {
-        const currentEx = workout.exercises[currentExerciseIndex];
-        const burnRate = currentEx.caloriesPerMinute || 5;
-        setSessionCalories(prev => prev + burnRate);
-    }
-  }, [timer, isActive, isResting, workout, currentExerciseIndex]);
+      timerIntervalRef.current = window.setInterval(() => {
+          setTimer(prev => prev + 1);
+      }, 1000);
+  };
 
-  // Voice Guidance
-  useEffect(() => {
-    if(!workout || isFinished) return;
-    const ex = workout.exercises[currentExerciseIndex];
-    
-    // Stop previous speech
-    window.speechSynthesis.cancel();
+  const stopTimer = () => {
+      if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+      }
+      setIsActive(false);
+  };
 
-    if (isResting) {
-        speak("Descanso. Registre suas repetições.");
-    } else {
-        const instruction = ex.reps ? `${ex.reps} repetições de ${ex.name}` : `${ex.durationSeconds} segundos de ${ex.name}`;
-        speak(instruction);
-        if(ex.breathingTip) setTimeout(() => speak(ex.breathingTip || ""), 3000);
-    }
-  }, [currentExerciseIndex, isResting, isFinished]);
+  const toggleTimer = () => {
+      if (isActive) stopTimer();
+      else startTimer();
+  };
 
-  if (!workout) return null;
+  // --- CONTROLE DE FLUXO (NEXT / PREV) ---
+  const handleNext = () => {
+      stopTimer();
+      setTimer(0);
+      playTone('beep');
 
-  const currentEx = workout.exercises[currentExerciseIndex];
-  const progress = ((currentExerciseIndex + 1) / workout.exercises.length) * 100;
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+      if (!isResting) {
+          // Finalizou exercício -> Vai para Descanso ou Save Log
+          if (currentExerciseIndex >= (workout?.exercises.length || 0) - 1) {
+              finishWorkout();
+          } else {
+              setIsResting(true);
+              // Smart Timer: Inicia descanso automaticamente
+              startTimer(); 
+          }
+      } else {
+          // Finalizou descanso -> Próximo exercício
+          setIsResting(false);
+          setCurrentExerciseIndex(prev => prev + 1);
+          // Auto-start next exercise (Dynamic Flow)
+          // startTimer(); // Opcional: Descomentar para fluxo hardcore
+      }
+  };
 
   const finishWorkout = () => {
-      const completedWorkout = { 
+      if(!workout) return;
+      const completed = { 
           ...workout, 
           completed: true, 
-          dateCreated: Date.now(),
-          caloriesBurned: sessionCalories,
-          durationTaken: Math.floor(timer / 60) // Aproximação
+          caloriesBurned: sessionCalories + 100, // Base burn + calculated
+          durationTaken: Math.floor(timer / 60)
       };
-      saveWorkoutSession(completedWorkout);
+      saveWorkoutSession(completed);
       saveCurrentWorkout(null);
       checkAndUnlockAchievements();
       playTone('success');
       setIsFinished(true);
-  }
-
-  const toggleTimer = () => {
-      if (!isActive) playTone('start');
-      setIsActive(!isActive);
-  }
-
-  const handleNext = () => {
-    playTone('beep');
-    setIsActive(false);
-    setTimer(0);
-
-    if (isResting) {
-        // Sai do descanso -> Vai para próximo exercício
-        setIsResting(false);
-        setCurrentExerciseIndex(p => p + 1);
-        setIsActive(true); // Auto start next exercise? Optional. Let's start it.
-    } else {
-        // Sai do exercício
-        // Se for o último, acaba
-        if (currentExerciseIndex === workout.exercises.length - 1) {
-            finishWorkout();
-        } else {
-            // Vai para descanso
-            setIsResting(true);
-            setIsActive(true); // Timer do descanso roda automático
-        }
-    }
   };
 
-  const saveLog = () => {
-      const reps = parseInt(repsDone);
-      if(reps > 0) {
-          const isRecord = saveSetResult({
-              exerciseId: currentEx.id,
-              date: Date.now(),
-              reps: reps
-          });
-          
-          setLogSaved(true);
-          
-          if(isRecord) {
-              setIsNewPR(true);
-              playTone('success');
-              speak("Novo recorde pessoal! Parabéns.");
-          }
-      }
-  }
+  // --- AI CAMERA HANDLERS ---
+  const handleAIRepCount = () => {
+      // Chamado pelo componente AICamera quando detecta uma rep
+      setRepsDone(prev => (parseInt(prev || '0') + 1).toString());
+      playTone('beep');
+  };
+
+  // --- RENDERIZADORES ---
+
+  if (!workout || !workout.exercises.length) return null;
+  const currentEx = workout.exercises[currentExerciseIndex];
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   if (isFinished) {
       return (
-          <div className="h-screen bg-ains-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-              
-              <div className="w-full max-w-sm glass-panel p-8 rounded-3xl relative z-10 text-center animate-slide-up border border-ains-primary/20">
-                   <div className="flex justify-center mb-6">
-                        <div className="p-6 rounded-full bg-ains-primary/10 border-2 border-ains-primary shadow-neon animate-pulse-slow">
-                             <Trophy size={48} className="text-ains-primary" />
-                        </div>
-                   </div>
-                   
-                   <h2 className="text-4xl font-display font-bold uppercase text-white mb-2 italic tracking-tighter">Missão<br/>Cumprida</h2>
-                   <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-8">AINSFIT • {new Date().toLocaleDateString()}</p>
-
-                   <div className="grid grid-cols-2 gap-4 mb-8">
-                       <div className="bg-black/50 p-4 rounded-xl border border-white/5">
-                           <div className="text-white text-3xl font-bold font-display italic">{Math.floor(sessionCalories)}</div>
-                           <div className="text-[10px] text-ains-primary uppercase font-bold tracking-wider">Calorias</div>
-                       </div>
-                       <div className="bg-black/50 p-4 rounded-xl border border-white/5">
-                           <div className="text-white text-3xl font-bold font-display italic">Concluído</div>
-                           <div className="text-[10px] text-ains-primary uppercase font-bold tracking-wider">Status</div>
-                       </div>
-                   </div>
-
-                   <Button onClick={() => navigate('/')} fullWidth variant="primary">Voltar ao QG</Button>
+          <div className="h-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+              <div className="z-10 text-center animate-slide-up">
+                  <div className="inline-block p-6 rounded-full bg-ains-primary/20 border-2 border-ains-primary mb-6 shadow-[0_0_50px_rgba(0,175,255,0.4)]">
+                      <Trophy size={64} className="text-ains-primary" />
+                  </div>
+                  <h1 className="text-5xl font-display font-bold text-white uppercase italic mb-2">Missão Cumprida</h1>
+                  <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase mb-8">XP Ganho: +150</p>
+                  <Button onClick={() => navigate('/')} fullWidth variant="primary">Voltar ao QG</Button>
               </div>
           </div>
-      )
+      );
   }
 
   return (
     <div className="h-screen w-full bg-black relative overflow-hidden flex flex-col">
       
-      {/* 1. BACKGROUND LAYER (VIDEO) */}
+      {/* 1. LAYER DE MÍDIA (VÍDEO/CAMERA) */}
       <div className="absolute inset-0 z-0">
-          {!isResting ? (
-             <VideoPlayer 
-                url={currentEx.videoUrl} 
-                title={currentEx.name} 
-                placeholder={currentEx.videoPlaceholder} 
-                autoPlay={isActive} // Play video only when timer is running
-                isActive={!isResting}
+          {showCamera ? (
+             <AICamera 
+                isActive={showCamera} 
+                exerciseType={currentEx.name}
+                onRepCount={handleAIRepCount}
+                onClose={() => setShowCamera(false)}
              />
           ) : (
-             // REST SCREEN BACKGROUND & LOGGING UI
-             <div className="w-full h-full bg-ains-bg flex flex-col relative p-6 pt-24">
-                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-black to-black animate-pulse-slow pointer-events-none"></div>
-                 
-                 {/* TIMER BIG */}
-                 <div className="z-10 text-center mb-8">
-                     <div className="text-[80px] font-display font-bold text-white tabular-nums tracking-tighter leading-none opacity-50">
-                         {formatTime(timer)}
-                     </div>
-                     <div className="text-ains-primary font-bold uppercase tracking-widest text-xs">Tempo de Descanso</div>
-                 </div>
-
-                 {/* LOGGING CARD */}
-                 <div className="z-20 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700 p-6 rounded-3xl shadow-2xl animate-slide-up">
-                     {!logSaved ? (
-                         <>
-                             <div className="flex justify-between items-center mb-4">
-                                 <h3 className="text-white font-display uppercase italic text-xl">Registrar Série</h3>
-                                 <div className="text-xs font-mono text-zinc-500">Recorde: {currentPR > 0 ? currentPR : '--'} reps</div>
-                             </div>
-                             
-                             <div className="flex gap-4 mb-4">
-                                 <div className="flex-1">
-                                     <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Repetições</label>
-                                     <input 
-                                        type="number" 
-                                        value={repsDone} 
-                                        onChange={e => setRepsDone(e.target.value)}
-                                        className="w-full bg-black border border-zinc-600 rounded-xl p-4 text-2xl text-white font-bold text-center focus:border-ains-primary outline-none"
-                                        placeholder="0"
-                                     />
-                                 </div>
-                                 <button onClick={saveLog} className="bg-ains-primary text-black font-bold uppercase px-6 rounded-xl hover:bg-white transition-colors shadow-neon">
-                                     <Save size={24} />
-                                 </button>
-                             </div>
-                         </>
-                     ) : (
-                         <div className="text-center py-4">
-                             {isNewPR ? (
-                                 <div className="animate-bounce">
-                                     <Trophy size={48} className="text-yellow-400 mx-auto mb-2 drop-shadow-[0_0_15px_rgba(255,215,0,0.6)]" />
-                                     <h3 className="text-2xl font-display font-bold text-white italic uppercase text-glow">Novo Recorde!</h3>
-                                     <p className="text-zinc-400 text-sm mt-1">{repsDone} Repetições destruídas.</p>
-                                 </div>
-                             ) : (
-                                 <div>
-                                     <Check size={48} className="text-green-500 mx-auto mb-2" />
-                                     <h3 className="text-xl font-bold text-white uppercase">Registrado!</h3>
-                                     <p className="text-zinc-500 text-sm">Bom trabalho. Foco na próxima.</p>
-                                 </div>
-                             )}
+             !isResting ? (
+                 <VideoPlayer 
+                    url={currentEx.videoUrl} 
+                    title={currentEx.name} 
+                    placeholder={currentEx.videoPlaceholder} 
+                    autoPlay={isActive} // Video toca se timer estiver rodando
+                    isActive={!isResting}
+                 />
+             ) : (
+                 // TELA DE DESCANSO
+                 <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center relative p-6">
+                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black animate-pulse-slow"></div>
+                     
+                     <div className="z-10 text-center">
+                         <h2 className="text-ains-primary font-bold uppercase tracking-widest text-sm mb-2">Recuperação</h2>
+                         <div className="text-[100px] font-display font-bold text-white leading-none tabular-nums tracking-tighter">
+                             {formatTime(timer)}
                          </div>
-                     )}
-                 </div>
+                         <p className="text-zinc-500 text-xs mt-4">Próximo: {workout.exercises[currentExerciseIndex + 1]?.name || 'FIM'}</p>
+                     </div>
 
-                 {/* NEXT EXERCISE PREVIEW */}
-                 <div className="z-10 mt-auto mb-8 bg-black/40 p-4 rounded-xl border border-white/5 flex items-center gap-4">
-                     <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center">
-                         <Play size={20} className="text-white"/>
-                     </div>
-                     <div>
-                         <span className="text-[10px] text-zinc-500 uppercase font-bold block">A Seguir</span>
-                         <span className="text-lg font-display font-bold text-white uppercase italic truncate block max-w-[200px]">
-                             {workout.exercises[currentExerciseIndex + 1]?.name || "Finalizar Treino"}
-                         </span>
+                     {/* LOGGING CARD DURANTE DESCANSO */}
+                     <div className="z-20 mt-12 w-full max-w-xs bg-zinc-900/80 backdrop-blur border border-zinc-700 p-4 rounded-2xl">
+                         <div className="flex justify-between text-xs font-bold text-zinc-400 uppercase mb-2">
+                             <span>Reps Feitas</span>
+                             <span>Recorde: {currentPR}</span>
+                         </div>
+                         <div className="flex gap-2">
+                             <input 
+                                type="number" 
+                                value={repsDone}
+                                onChange={(e) => setRepsDone(e.target.value)}
+                                className="flex-1 bg-black border border-zinc-600 rounded-lg text-center text-xl text-white font-bold py-2 focus:border-ains-primary outline-none"
+                             />
+                             <button 
+                                onClick={() => { saveSetResult({ exerciseId: currentEx.id, date: Date.now(), reps: parseInt(repsDone) }); playTone('success'); }}
+                                className="bg-ains-primary text-black px-4 rounded-lg font-bold"
+                             >
+                                 SALVAR
+                             </button>
+                         </div>
                      </div>
                  </div>
-             </div>
+             )
           )}
-          {/* Dark Overlay for contrast */}
-          {!isResting && <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 pointer-events-none"></div>}
+          {/* Overlay gradiente para legibilidade */}
+          {!isResting && !showCamera && <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 pointer-events-none"></div>}
       </div>
 
       {/* 2. TOP BAR */}
       <div className="relative z-20 flex justify-between items-center p-6 pt-8">
-          <button onClick={() => { if(confirm("Sair do treino?")) { saveCurrentWorkout(null); navigate('/'); } }} className="bg-black/40 backdrop-blur-md p-3 rounded-full text-white border border-white/10 hover:bg-red-500 hover:border-red-500 transition-colors">
-              <X size={20}/>
+          <button onClick={() => { if(confirm("Abandonar missão?")) { saveCurrentWorkout(null); navigate('/'); } }} className="bg-black/30 backdrop-blur p-2 rounded-full text-white hover:bg-red-500 transition-colors">
+              <X size={24}/>
           </button>
           
-          <div className="flex flex-col items-center">
-             <div className="flex items-center gap-1 mb-1">
-                 {workout.exercises.map((_, idx) => (
-                     <div key={idx} className={`h-1 rounded-full transition-all ${idx === currentExerciseIndex ? 'w-8 bg-ains-primary' : idx < currentExerciseIndex ? 'w-2 bg-ains-primary/50' : 'w-2 bg-zinc-700'}`}></div>
-                 ))}
-             </div>
-             <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                 Ex {currentExerciseIndex + 1} / {workout.exercises.length}
-             </div>
+          {/* Progress Indicator */}
+          <div className="flex gap-1">
+             {workout.exercises.map((_, idx) => (
+                 <div key={idx} className={`h-1.5 w-6 rounded-full transition-all ${idx === currentExerciseIndex ? 'bg-ains-primary shadow-[0_0_10px_#00AFFF]' : idx < currentExerciseIndex ? 'bg-zinc-600' : 'bg-zinc-800'}`}></div>
+             ))}
           </div>
 
-          <button onClick={() => setShowInfo(true)} className="bg-black/40 backdrop-blur-md p-3 rounded-full text-white border border-white/10 hover:bg-ains-primary hover:text-black hover:border-ains-primary transition-colors">
-              <Info size={20}/>
-          </button>
+          <div className="flex gap-2">
+              {!isResting && (
+                  <button onClick={() => setShowCamera(!showCamera)} className={`p-2 rounded-full backdrop-blur transition-colors ${showCamera ? 'bg-ains-primary text-black' : 'bg-black/30 text-white'}`}>
+                      <Camera size={24}/>
+                  </button>
+              )}
+              <button onClick={() => setShowInfo(true)} className="bg-black/30 backdrop-blur p-2 rounded-full text-white hover:bg-white hover:text-black transition-colors">
+                  <Info size={24}/>
+              </button>
+          </div>
       </div>
 
-      {/* 3. CENTER / MAIN CONTENT AREA */}
-      <div className="flex-1 relative z-10 flex flex-col justify-end pb-8 px-6">
-          {!isResting && (
+      {/* 3. MAIN CONTROLS (BOTTOM) */}
+      <div className="flex-1 relative z-10 flex flex-col justify-end pb-10 px-6">
+          {!isResting && !showCamera && (
               <div className="animate-slide-up">
-                  {/* Exercise Title */}
-                  <h1 className="text-4xl font-display font-bold text-white uppercase italic leading-none mb-2 drop-shadow-lg">{currentEx.name}</h1>
-                  
-                  {/* Reps/Timer Badge */}
-                  <div className="flex items-center gap-3 mb-6">
-                      <div className="bg-ains-primary text-black px-4 py-1 font-black text-xl uppercase transform -skew-x-12 shadow-neon">
-                          {currentEx.reps || `${currentEx.durationSeconds}s`}
+                  <div className="flex items-end justify-between mb-4">
+                      <div>
+                          <h1 className="text-4xl font-display font-bold text-white uppercase italic leading-none drop-shadow-lg">{currentEx.name}</h1>
+                          <div className="flex gap-2 mt-2">
+                              <span className="bg-ains-primary/20 text-ains-primary border border-ains-primary/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{currentEx.muscleGroup}</span>
+                              <span className="bg-white/10 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase">{currentEx.reps} Reps</span>
+                          </div>
                       </div>
-                      <span className="text-white/80 font-bold uppercase text-sm tracking-wider shadow-black drop-shadow-md">{currentEx.sets} Séries</span>
                   </div>
 
-                  {/* CONTROLS */}
-                  <div className="flex items-center justify-between gap-4">
-                      {/* Timer Button (Main Action) */}
+                  <div className="flex items-center gap-4 h-24">
+                      {/* MAIN ACTION BUTTON (Start/Pause) */}
                       <button 
                         onClick={toggleTimer}
-                        className={`flex-1 h-20 rounded-2xl flex items-center justify-between px-6 border-2 transition-all shadow-lg active:scale-95 ${isActive ? 'bg-zinc-900/90 border-zinc-700 text-white' : 'bg-white border-white text-black'}`}
+                        className={`flex-1 h-full rounded-2xl flex items-center justify-between px-6 border-2 transition-all active:scale-95 shadow-xl ${isActive ? 'bg-zinc-900/90 border-zinc-700 text-white' : 'bg-white border-white text-black'}`}
                       >
                           <div className="flex flex-col text-left">
                               <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">{isActive ? 'Tempo' : 'Iniciar'}</span>
-                              <span className="text-3xl font-mono font-bold tracking-tighter">{formatTime(timer)}</span>
+                              <span className="text-4xl font-mono font-bold tracking-tighter">{formatTime(timer)}</span>
                           </div>
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isActive ? 'bg-red-500/20 text-red-500' : 'bg-black text-ains-primary'}`}>
-                              {isActive ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1"/>}
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isActive ? 'bg-red-500/20 text-red-500' : 'bg-black text-ains-primary'}`}>
+                              {isActive ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} className="ml-1"/>}
                           </div>
                       </button>
 
-                      {/* Next Button */}
+                      {/* NEXT BUTTON */}
                       <button 
                         onClick={handleNext}
-                        className="h-20 w-20 bg-ains-primary rounded-2xl flex items-center justify-center text-black shadow-neon border-2 border-ains-primary hover:scale-105 active:scale-95 transition-transform"
+                        className="h-full w-24 bg-ains-primary rounded-2xl flex flex-col items-center justify-center text-black shadow-neon border-2 border-ains-primary hover:scale-105 active:scale-95 transition-transform"
                       >
                           <Check size={32} strokeWidth={4} />
+                          <span className="text-[10px] font-black uppercase mt-1">Próximo</span>
                       </button>
                   </div>
               </div>
           )}
 
           {isResting && (
-              <div className="w-full">
-                  <Button onClick={handleNext} fullWidth className="h-16 text-lg border-2 border-white/20 bg-zinc-900 hover:bg-ains-primary hover:text-black hover:border-ains-primary transition-colors">
-                      PULAR DESCANSO <ChevronRight className="ml-2"/>
-                  </Button>
-              </div>
+              <Button onClick={handleNext} fullWidth className="h-20 text-xl border-2 border-white/20 bg-zinc-900 hover:bg-ains-primary hover:text-black hover:border-ains-primary transition-colors">
+                  PRONTO <ChevronRight className="ml-2"/>
+              </Button>
           )}
       </div>
 
-      {/* 4. BOTTOM SHEET INFO (MODAL) */}
+      {/* 4. INFO SHEET */}
       {showInfo && (
-          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl p-6 overflow-y-auto animate-fade-in flex flex-col">
+          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl p-6 overflow-y-auto animate-fade-in">
               <div className="flex justify-between items-center mb-8">
-                  <h3 className="font-display font-bold text-3xl uppercase italic text-white">Dados Táticos</h3>
-                  <button onClick={() => setShowInfo(false)} className="bg-zinc-800 p-2 rounded-full text-white hover:bg-red-500 transition-colors"><X /></button>
+                  <h3 className="font-display font-bold text-3xl uppercase italic text-white">Detalhes Táticos</h3>
+                  <button onClick={() => setShowInfo(false)} className="bg-zinc-800 p-2 rounded-full text-white"><X /></button>
               </div>
               
-              <div className="space-y-6 pb-12">
-                   {/* Technique */}
-                   <div>
-                       <h4 className="font-bold text-zinc-500 uppercase text-xs mb-4 tracking-widest border-b border-zinc-800 pb-1">Execução Perfeita</h4>
-                       <div className="space-y-4">
+              <div className="space-y-6">
+                   <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                       <h4 className="font-bold text-ains-primary uppercase text-xs mb-2">Execução</h4>
+                       <ul className="space-y-3">
                            {currentEx.stepByStep?.map((s, i) => (
-                               <div key={i} className="flex gap-4">
-                                   <div className="w-6 h-6 rounded-sm bg-ains-primary flex items-center justify-center text-xs font-bold text-black shrink-0">{i+1}</div>
-                                   <p className="text-sm text-zinc-300 leading-relaxed">{s}</p>
-                               </div>
+                               <li key={i} className="flex gap-3 text-sm text-zinc-300">
+                                   <span className="text-zinc-600 font-bold">{i+1}.</span> {s}
+                               </li>
                            ))}
+                       </ul>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4">
+                       <div className="bg-red-900/20 p-4 rounded-xl border border-red-900/50">
+                           <div className="flex items-center gap-2 text-red-500 font-bold text-xs uppercase mb-2"><AlertCircle size={14}/> Erros Comuns</div>
+                           <p className="text-xs text-zinc-400">{currentEx.commonErrors?.[0]}</p>
+                       </div>
+                       <div className="bg-blue-900/20 p-4 rounded-xl border border-blue-900/50">
+                           <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase mb-2"><Wind size={14}/> Respiração</div>
+                           <p className="text-xs text-zinc-400">{currentEx.breathingTip}</p>
                        </div>
                    </div>
 
-                   {/* Errors */}
-                   <div className="bg-red-500/10 p-5 rounded-2xl border border-red-500/20">
-                       <div className="flex items-center gap-2 mb-3 text-red-500 font-bold uppercase text-xs tracking-wider"><AlertCircle size={16}/> Erros Comuns</div>
-                       <ul className="list-disc pl-4 text-sm text-zinc-300 space-y-2">
-                           {currentEx.commonErrors?.map((e, i) => <li key={i}>{e}</li>)}
-                       </ul>
+                   {/* 3D Model Hints (Placeholder text for updated request) */}
+                   <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
+                       <div>
+                           <div className="text-xs font-bold text-white uppercase">Visualização 3D</div>
+                           <div className="text-[10px] text-zinc-500">Músculos principais destacados</div>
+                       </div>
+                       <div className="w-10 h-10 bg-zinc-800 rounded flex items-center justify-center">
+                           <Eye size={20} className="text-ains-primary"/>
+                       </div>
                    </div>
-
-                   {/* Breathing */}
-                   <div className="bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20">
-                       <div className="flex items-center gap-2 mb-3 text-blue-400 font-bold uppercase text-xs tracking-wider"><Wind size={16}/> Respiração</div>
-                       <p className="text-sm text-zinc-300 leading-relaxed italic">"{currentEx.breathingTip}"</p>
-                  </div>
-                  
-                  {/* Muscles */}
-                  <div>
-                      <h4 className="font-bold text-zinc-500 uppercase text-xs mb-3 tracking-widest">Ativação</h4>
-                      <div className="flex flex-wrap gap-2">
-                          {currentEx.musculosPrimarios.map(m => (
-                              <span key={m} className="bg-zinc-800 border border-zinc-700 px-3 py-1 rounded text-xs font-bold uppercase text-white">{m}</span>
-                          ))}
-                      </div>
-                  </div>
               </div>
           </div>
       )}

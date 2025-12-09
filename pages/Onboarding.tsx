@@ -20,7 +20,7 @@ export const Onboarding: React.FC = () => {
     height: 175, 
     goal: Goal.LOSE_WEIGHT, 
     level: ExperienceLevel.BEGINNER,
-    equipment: Equipment.NONE, 
+    equipment: [Equipment.NONE], 
     injuries: [Injury.NONE], 
     coachStyle: CoachStyle.FRIENDLY,
     workoutDuration: 45, 
@@ -125,9 +125,16 @@ export const Onboarding: React.FC = () => {
             )}
             {step === 5 && (
                  <div className="space-y-2">
-                    {Object.values(Equipment).map(e => (
-                        <button key={e} onClick={() => update('equipment', e)} className={`w-full p-4 border rounded-sm ${profile.equipment === e ? 'bg-zinc-800 border-white text-white' : 'bg-transparent border-zinc-800 text-zinc-500'} font-bold uppercase flex items-center gap-2`}><Dumbbell size={16}/> {e}</button>
-                    ))}
+                    {Object.values(Equipment).map(e => {
+                        const isSelected = profile.equipment?.includes(e);
+                        return (
+                            <button key={e} onClick={() => {
+                                const current = profile.equipment || [];
+                                const newItem = isSelected ? current.filter(i => i !== e) : [...current, e];
+                                update('equipment', newItem.length ? newItem : [Equipment.NONE]);
+                            }} className={`w-full p-4 border rounded-sm ${isSelected ? 'bg-zinc-800 border-white text-white' : 'bg-transparent border-zinc-800 text-zinc-500'} font-bold uppercase flex items-center gap-2`}><Dumbbell size={16}/> {e}</button>
+                        );
+                    })}
                 </div>
             )}
             {step === 6 && (

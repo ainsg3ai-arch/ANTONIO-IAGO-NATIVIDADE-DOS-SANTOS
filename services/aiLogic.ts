@@ -30,7 +30,7 @@ export const generateWorkoutAI = (profile: UserProfile): WorkoutSession => {
   // 1. Filtrar Exercícios Seguros e Disponíveis
   let availableExercises = EXERCISE_DATABASE.filter(ex => {
     const required = ex.equipmentRequired || [Equipment.NONE];
-    const hasEquipment = required.includes(equipment) || required.includes(Equipment.NONE);
+    const hasEquipment = required.every(req => req === Equipment.NONE || equipment.includes(req));
     const safe = isExerciseSafe(ex, injuries);
     return hasEquipment && safe;
   });
@@ -83,6 +83,12 @@ export const generateWorkoutAI = (profile: UserProfile): WorkoutSession => {
       }
   }
 
+  // Determinar tipo de treino
+  let type: 'HIIT' | 'STRENGTH' | 'SKILL' | 'FLOW' = 'STRENGTH';
+  if (goal === Goal.LOSE_WEIGHT || goal === Goal.ENDURANCE) type = 'HIIT';
+  if (goal === Goal.SKILL_CALISTHENICS) type = 'SKILL';
+  if (goal === Goal.MOBILITY) type = 'FLOW';
+
   return {
       id: generateUUID(),
       name: `Treino ${goal} (${workoutDuration}min)`,
@@ -90,7 +96,8 @@ export const generateWorkoutAI = (profile: UserProfile): WorkoutSession => {
       exercises: workoutPlan,
       completed: false,
       durationTaken: 0,
-      caloriesBurned: 0 
+      caloriesBurned: 0,
+      type: type
   };
 };
 

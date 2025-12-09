@@ -1,5 +1,9 @@
 
+// SINGLETON PATTERN PARA AUDIO CONTEXT
+// Corrige erro crítico onde múltiplos contextos travavam o navegador (limite de 6-32 contextos).
+
 let audioCtx: AudioContext | null = null;
+let gainNode: GainNode | null = null;
 let voicesLoaded = false;
 let preferredVoice: SpeechSynthesisVoice | null = null;
 
@@ -7,7 +11,6 @@ const loadVoices = () => {
     if (!('speechSynthesis' in window)) return;
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-        // Tenta pegar Google Portugues, depois qualquer pt-BR, depois qualquer pt
         preferredVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) || 
                          voices.find(v => v.lang.includes('pt-BR')) || 
                          voices.find(v => v.lang.includes('pt'));
@@ -23,51 +26,58 @@ if ('speechSynthesis' in window) {
 export const speak = (text: string) => {
     if (!('speechSynthesis' in window)) return;
     
-    // Cancel any current speech to avoid queue buildup
+    // Cancela imediatamente para evitar fila e lag
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
     
-    if (preferredVoice) {
-        utterance.voice = preferredVoice;
-    } else if (!voicesLoaded) {
-        // Tenta carregar novamente se ainda não carregou
+    if (preferredVoice) utterance.voice = preferredVoice;
+    else if (!voicesLoaded) {
         loadVoices();
         if (preferredVoice) utterance.voice = preferredVoice;
     }
     
-    utterance.rate = 1.1; // Levemente mais rápido para treino
+    utterance.rate = 1.2; // Mais dinâmico
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     
-    window.speechSynthesis.speak(utterance);
+    // Pequeno delay para garantir que o cancel funcionou
+    setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+    }, 50);
 };
-
 
 export const initAudio = () => {
     if (!audioCtx) {
-        audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+            // Cria um GainNode global para controle mestre
+            gainNode = audioCtx.createGain();
+            gainNode.connect(audioCtx.destination);
+        }
     }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+    
+    // Mobile browsers require resume on user interaction to unlock audio
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(e => console.error("Audio resume failed", e));
     }
     return audioCtx;
 }
 
 export const playTone = (type: 'beep' | 'start' | 'success') => {
+    // Sempre reutiliza o contexto existente
     const ctx = initAudio();
-    if (!ctx) return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    if (!ctx || !gainNode) return;
 
     const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain(); // Ganho local para envelope
+
+    osc.connect(gain);
+    gain.connect(gainNode); // Conecta ao mestre
 
     if (type === 'beep') {
-        // High pitch beep for countdown
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, now);
         gain.gain.setValueAtTime(0.1, now);
@@ -75,7 +85,6 @@ export const playTone = (type: 'beep' | 'start' | 'success') => {
         osc.start(now);
         osc.stop(now + 0.15); 
     } else if (type === 'start') {
-        // Rising tone (Sci-fi style)
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(200, now);
         osc.frequency.linearRampToValueAtTime(600, now + 0.2);
@@ -84,24 +93,22 @@ export const playTone = (type: 'beep' | 'start' | 'success') => {
         osc.start(now);
         osc.stop(now + 0.3);
     } else if (type === 'success') {
-        // Victory Chord
-        const plays = [440, 554, 659]; // A Major
-        plays.forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.connect(g);
-            g.connect(ctx.destination);
-            
-            o.type = 'square'; // Mais "gamey"
-            o.frequency.value = freq;
-            
-            // Envelope ADSR simples
-            g.gain.setValueAtTime(0, now + i * 0.1);
-            g.gain.linearRampToValueAtTime(0.05, now + i * 0.1 + 0.05);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.5);
-            
-            o.start(now + i * 0.1);
-            o.stop(now + i * 0.1 + 0.6);
-        });
+        // Acorde simples para evitar criar muitos nós
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554, now + 0.1); // C#
+        osc.frequency.setValueAtTime(659, now + 0.2); // E
+        
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.4);
+        
+        osc.start(now);
+        osc.stop(now + 0.4);
     }
+    
+    // Garbage collection manual para os nós
+    osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+    };
 };

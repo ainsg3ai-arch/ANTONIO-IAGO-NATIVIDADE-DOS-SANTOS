@@ -1,6 +1,6 @@
 
 import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem, ExerciseSetLog } from '../types';
-import { STORE_ITEMS, PROGRAM_30_DAYS } from '../constants';
+import { STORE_ITEMS } from '../constants';
 
 const KEYS = {
   PROFILE: 'ainsfit_profile',
@@ -12,29 +12,46 @@ const KEYS = {
   INVENTORY: 'ainsfit_inventory',
   PROGRAM_STATUS: 'ainsfit_program_status',
   NUTRITION_LOGS: 'ainsfit_nutrition_logs',
-  EXERCISE_LOGS: 'ainsfit_exercise_logs' // Nova chave para logs detalhados
+  EXERCISE_LOGS: 'ainsfit_exercise_logs'
+};
+
+// --- SAFE PARSE HELPER (CRITICAL FIX) ---
+// Impede que o app trave (Tela Branca) se o JSON estiver corrompido.
+const safeParse = <T>(key: string, fallback: T): T => {
+    try {
+        const data = localStorage.getItem(key);
+        if (!data || data === "undefined" || data === "null") return fallback;
+        return JSON.parse(data);
+    } catch (e) {
+        console.error(`CRITICAL: Error parsing key ${key}. Resetting to fallback.`, e);
+        // Opcional: Limpar a chave corrompida para evitar erros futuros
+        // localStorage.removeItem(key); 
+        return fallback;
+    }
 };
 
 export const saveProfile = (profile: UserProfile): void => {
-  localStorage.setItem(KEYS.PROFILE, JSON.stringify(profile));
+  try {
+      localStorage.setItem(KEYS.PROFILE, JSON.stringify(profile));
+  } catch (e) {
+      console.error("Storage Full or Error", e);
+  }
 };
 
 export const getProfile = (): UserProfile | null => {
-  const data = localStorage.getItem(KEYS.PROFILE);
-  return data ? JSON.parse(data) : null;
+  return safeParse<UserProfile | null>(KEYS.PROFILE, null);
 };
 
 // --- Program Tracking ---
 export const getProgramStatus = () => {
-    const data = localStorage.getItem(KEYS.PROGRAM_STATUS);
-    return data ? JSON.parse(data) : { currentDay: 1, completedDays: [] };
+    return safeParse(KEYS.PROGRAM_STATUS, { currentDay: 1, completedDays: [] });
 }
 
 export const completeProgramDay = (dayNumber: number) => {
     const status = getProgramStatus();
     if (!status.completedDays.includes(dayNumber)) {
         status.completedDays.push(dayNumber);
-        status.currentDay = dayNumber + 1; // Advance to next day
+        status.currentDay = dayNumber + 1;
         localStorage.setItem(KEYS.PROGRAM_STATUS, JSON.stringify(status));
         return true;
     }
@@ -47,7 +64,7 @@ export const addXP = (amount: number) => {
     const profile = getProfile();
     if (profile) {
         profile.xp = (profile.xp || 0) + amount;
-        profile.coins = (profile.coins || 0) + Math.floor(amount / 2); // 1 Coin per 2 XP
+        profile.coins = (profile.coins || 0) + Math.floor(amount / 2);
         saveProfile(profile);
     }
 }
@@ -55,8 +72,7 @@ export const addXP = (amount: number) => {
 // --- Store & Inventory ---
 
 export const getInventory = (): InventoryItem[] => {
-    const data = localStorage.getItem(KEYS.INVENTORY);
-    return data ? JSON.parse(data) : [];
+    return safeParse<InventoryItem[]>(KEYS.INVENTORY, []);
 }
 
 export const buyItem = (itemId: string): boolean => {
@@ -95,20 +111,17 @@ export const saveWorkoutSession = (session: WorkoutSession): void => {
   history.push(session);
   localStorage.setItem(KEYS.HISTORY, JSON.stringify(history));
   
-  // Logic to advance program if this was a program workout
   if (session.isProgramWorkout) {
       const status = getProgramStatus();
       completeProgramDay(status.currentDay);
   }
 
-  // Add XP
   const xpEarned = Math.floor((session.caloriesBurned || 100));
   addXP(xpEarned);
 };
 
 export const getHistory = (): WorkoutSession[] => {
-  const data = localStorage.getItem(KEYS.HISTORY);
-  return data ? JSON.parse(data) : [];
+  return safeParse<WorkoutSession[]>(KEYS.HISTORY, []);
 };
 
 export const saveHabitLog = (log: HabitLog): void => {
@@ -123,8 +136,7 @@ export const saveHabitLog = (log: HabitLog): void => {
 };
 
 export const getHabits = (): HabitLog[] => {
-  const data = localStorage.getItem(KEYS.HABITS);
-  return data ? JSON.parse(data) : [];
+  return safeParse<HabitLog[]>(KEYS.HABITS, []);
 };
 
 export const saveCurrentWorkout = (workout: WorkoutSession | null) => {
@@ -136,15 +148,13 @@ export const saveCurrentWorkout = (workout: WorkoutSession | null) => {
 }
 
 export const getCurrentWorkout = (): WorkoutSession | null => {
-    const data = localStorage.getItem(KEYS.CURRENT_WORKOUT);
-    return data ? JSON.parse(data) : null;
+    return safeParse<WorkoutSession | null>(KEYS.CURRENT_WORKOUT, null);
 }
 
-// --- Performance Logs & PRs (NEW) ---
+// --- Performance Logs & PRs ---
 
 export const getExerciseLogs = (): ExerciseSetLog[] => {
-    const data = localStorage.getItem(KEYS.EXERCISE_LOGS);
-    return data ? JSON.parse(data) : [];
+    return safeParse<ExerciseSetLog[]>(KEYS.EXERCISE_LOGS, []);
 }
 
 export const getPersonalBest = (exerciseId: string): number => {
@@ -152,7 +162,6 @@ export const getPersonalBest = (exerciseId: string): number => {
     const exerciseLogs = logs.filter(l => l.exerciseId === exerciseId);
     if (exerciseLogs.length === 0) return 0;
     
-    // Simples PR baseado em reps (futuramente pode considerar carga estimada 1RM)
     return Math.max(...exerciseLogs.map(l => l.reps));
 }
 
@@ -169,8 +178,8 @@ export const saveSetResult = (log: ExerciseSetLog): boolean => {
     logs.push(log);
     localStorage.setItem(KEYS.EXERCISE_LOGS, JSON.stringify(logs));
     
-    if(isPR) addXP(50); // Bônus por recorde
-    else addXP(10); // XP por set registrado
+    if(isPR) addXP(50);
+    else addXP(10);
 
     return isPR;
 }
@@ -178,8 +187,7 @@ export const saveSetResult = (log: ExerciseSetLog): boolean => {
 // --- Achievement System ---
 
 export const getUnlockedAchievements = (): UserAchievement[] => {
-    const data = localStorage.getItem(KEYS.ACHIEVEMENTS);
-    return data ? JSON.parse(data) : [];
+    return safeParse<UserAchievement[]>(KEYS.ACHIEVEMENTS, []);
 }
 
 const saveUnlockedAchievement = (achievementId: string) => {
@@ -189,7 +197,6 @@ const saveUnlockedAchievement = (achievementId: string) => {
     current.push({ achievementId, unlockedAt: Date.now() });
     localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(current));
     
-    // Bonus XP for achievement
     addXP(200);
 }
 
@@ -198,13 +205,11 @@ export const checkAndUnlockAchievements = (): string[] => {
     const existingIds = getUnlockedAchievements().map(a => a.achievementId);
     const newUnlocked: string[] = [];
 
-    // 1. First Step
     if (history.length >= 1 && !existingIds.includes('first_step')) {
         saveUnlockedAchievement('first_step');
         newUnlocked.push('Primeiro Passo');
     }
 
-    // 2. Week Warrior (simplified logic for demo)
     if (history.length >= 7 && !existingIds.includes('week_warrior')) {
         saveUnlockedAchievement('week_warrior');
         newUnlocked.push('Guerreiro Semanal');
@@ -222,8 +227,7 @@ export const saveTemplate = (template: WorkoutTemplate) => {
 }
 
 export const getTemplates = (): WorkoutTemplate[] => {
-    const data = localStorage.getItem(KEYS.TEMPLATES);
-    return data ? JSON.parse(data) : [];
+    return safeParse<WorkoutTemplate[]>(KEYS.TEMPLATES, []);
 }
 
 export const deleteTemplate = (id: string) => {
@@ -234,8 +238,7 @@ export const deleteTemplate = (id: string) => {
 // --- Nutrition Logs ---
 
 export const getNutritionLogs = (): DailyNutritionLog[] => {
-    const data = localStorage.getItem(KEYS.NUTRITION_LOGS);
-    return data ? JSON.parse(data) : [];
+    return safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
 }
 
 export const getDailyNutrition = (date: string): DailyNutritionLog => {
@@ -256,7 +259,7 @@ export const addMealItem = (item: MealItem) => {
     }
     
     localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
-    addXP(5); // Small reward for tracking
+    addXP(5);
 }
 
 export const removeMealItem = (itemId: string, date: string) => {
@@ -272,27 +275,32 @@ export const removeMealItem = (itemId: string, date: string) => {
 // --- Data Backup & Restore ---
 
 export const exportData = () => {
-    const data = {
-        profile: getProfile(),
-        history: getHistory(),
-        habits: getHabits(),
-        achievements: getUnlockedAchievements(),
-        templates: getTemplates(),
-        inventory: getInventory(),
-        program: getProgramStatus(),
-        nutrition: getNutritionLogs(),
-        logs: getExerciseLogs(),
-        timestamp: Date.now()
-    };
-    
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `AINSFIT_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+        const data = {
+            profile: getProfile(),
+            history: getHistory(),
+            habits: getHabits(),
+            achievements: getUnlockedAchievements(),
+            templates: getTemplates(),
+            inventory: getInventory(),
+            program: getProgramStatus(),
+            nutrition: getNutritionLogs(),
+            logs: getExerciseLogs(),
+            timestamp: Date.now()
+        };
+        
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `AINSFIT_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (e) {
+        alert("Erro ao exportar dados.");
+        console.error(e);
+    }
 };
 
 export const importData = async (file: File): Promise<boolean> => {
@@ -300,6 +308,7 @@ export const importData = async (file: File): Promise<boolean> => {
         const text = await file.text();
         const data = JSON.parse(text);
         
+        // Validação básica antes de salvar
         if (data.profile) localStorage.setItem(KEYS.PROFILE, JSON.stringify(data.profile));
         if (data.history) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
         if (data.habits) localStorage.setItem(KEYS.HABITS, JSON.stringify(data.habits));
@@ -313,6 +322,7 @@ export const importData = async (file: File): Promise<boolean> => {
         return true;
     } catch (e) {
         console.error("Failed to import data", e);
+        alert("Arquivo inválido ou corrompido.");
         return false;
     }
 };

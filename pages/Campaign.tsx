@@ -1,14 +1,18 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Lock, PlayCircle, Calendar } from 'lucide-react';
 import { getProfile, getProgramStatus } from '../services/storageService';
-import { PROGRAM_30_DAYS } from '../constants';
+import { PROGRAMS } from '../constants';
 import { UserProfile } from '../types';
 
 export const Campaign: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
+  
+  // Use the first program as the campaign for now
+  const PROGRAM_30_DAYS = PROGRAMS[0];
 
   useEffect(() => {
       setProfile(getProfile());
@@ -36,7 +40,7 @@ export const Campaign: React.FC = () => {
         <div className="p-6">
             <div className="flex justify-between items-end mb-6">
                 <h2 className="text-lg font-bold uppercase">Cronograma</h2>
-                <span className="text-xs text-zinc-500 font-mono">DIA {currentDay} DE 30</span>
+                <span className="text-xs text-zinc-500 font-mono">DIA {currentDay} DE {PROGRAM_30_DAYS.durationWeeks * 7}</span>
             </div>
 
             <div className="space-y-4">
@@ -53,7 +57,7 @@ export const Campaign: React.FC = () => {
                             
                             <div className="flex-1">
                                 <h3 className={`font-bold uppercase text-sm ${isCurrent ? 'text-white' : 'text-zinc-400'}`}>{day.title}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">{day.focus}</p>
+                                <p className="text-sm text-zinc-500 uppercase tracking-wide">{day.focus}</p>
                             </div>
 
                             <div className="text-zinc-500">

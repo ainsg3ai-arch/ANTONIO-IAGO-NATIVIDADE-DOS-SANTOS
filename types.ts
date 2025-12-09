@@ -1,16 +1,17 @@
 
 export enum Goal {
-  LOSE_WEIGHT = 'Perder Peso',
-  BUILD_MUSCLE = 'Definição Muscular',
-  IMPROVE_ENDURANCE = 'Resistência',
-  FLEXIBILITY = 'Mobilidade & Flexibilidade',
-  TONING = 'Tonificação Total'
+  LOSE_WEIGHT = 'Queimar Gordura',
+  BUILD_MUSCLE = 'Hipertrofia / Força',
+  SKILL_CALISTHENICS = 'Habilidades Calistenia',
+  ENDURANCE = 'Resistência Infinita',
+  MOBILITY = 'Mobilidade & Flexibilidade'
 }
 
 export enum ExperienceLevel {
-  BEGINNER = 'Iniciante',
-  INTERMEDIATE = 'Intermediário',
-  ADVANCED = 'Avançado',
+  BEGINNER = 'Iniciante (Fundação)',
+  INTERMEDIATE = 'Intermediário (Progresso)',
+  ADVANCED = 'Avançado (Elite)',
+  ELITE = 'Deus da Calistenia'
 }
 
 export enum ExerciseCategory {
@@ -18,44 +19,41 @@ export enum ExerciseCategory {
   PULL = 'Puxar (Pull)',
   LEGS = 'Pernas',
   CORE = 'Core/Abdômen',
-  CARDIO = 'Cardio/Funcional',
-  MOBILITY = 'Mobilidade/Alongamento',
-  FULL_BODY = 'Corpo Inteiro'
+  CARDIO = 'Cardio/HIIT',
+  SKILL = 'Skill/Isometria',
+  MOBILITY = 'Mobilidade'
 }
 
 export enum MuscleGroup {
-  CHEST = 'Peito',
-  BACK = 'Costas',
+  CHEST = 'Peitoral',
+  BACK = 'Dorsais',
   LEGS = 'Pernas',
   SHOULDERS = 'Ombros',
   ARMS = 'Braços',
   ABS = 'Abdômen',
   CARDIO = 'Cardio',
-  GLUTES = 'Glúteos',
-  CALVES = 'Panturrilhas',
-  FULL_BODY = 'Corpo Inteiro'
+  FULL_BODY = 'Full Body'
 }
 
 export enum Injury {
   NONE = 'Nenhuma',
   SHOULDERS = 'Ombros',
   KNEES = 'Joelhos',
-  BACK = 'Costas/Lombar',
+  BACK = 'Lombar',
   WRISTS = 'Punhos'
 }
 
 export enum CoachStyle {
   FRIENDLY = 'Amigo Motivador',
   MILITARY = 'Sargento Hardcore',
-  SCIENTIFIC = 'Cientista Analítico',
-  STOIC = 'Filósofo Estoico'
+  ANALYTICAL = 'IA Analítica'
 }
 
 export enum Equipment {
-  NONE = 'Bodyweight',
-  DUMBBELL = 'Halteres',
-  BARBELL = 'Barra',
-  BAND = 'Elástico'
+  NONE = 'Somente Peso do Corpo',
+  BAR = 'Barra Fixa / Argolas',
+  PARALLETTES = 'Paralelas',
+  BAND = 'Elásticos'
 }
 
 export type Gender = 'male' | 'female';
@@ -68,16 +66,19 @@ export interface UserProfile {
   height: number;
   goal: Goal;
   level: ExperienceLevel;
-  equipment: string; // Simplificado para "Bodyweight"
+  equipment: Equipment[];
   injuries: Injury[];
   coachStyle: CoachStyle;
   workoutDuration: number;
   workoutFrequency: number;
   onboarded: boolean;
   xp: number;
+  levelNumber: number; // 1 to 50
   coins: number;
-  campaignProgress: number; // Current Day in Program
+  campaignProgress: number; 
   equippedSkin?: string;
+  silentMode?: boolean; // New setting
+  aiEnabled?: boolean; // New setting
 }
 
 export interface Exercise {
@@ -89,21 +90,22 @@ export interface Exercise {
   musculosSecundarios?: string[];
   difficulty: ExperienceLevel;
   videoPlaceholder: string;
-  videoUrl: string; // Vertical video preference
+  videoUrl: string; // YouTube/TikTok link
   description: string;
-  stepByStep: string[]; // New: Detailed steps
-  commonErrors?: string[]; // New: Common mistakes
-  breathingTip?: string; // New: Breathing guide
-  variations?: { // New: Progressions and Regressions
+  stepByStep: string[]; 
+  commonErrors?: string[]; 
+  breathingTip?: string; 
+  variations?: { 
       easier?: string[];
       harder?: string[];
   };
-  reps?: string;
+  reps?: string; // "10-12" or "FALHA"
   sets?: number;
   durationSeconds?: number;
   caloriesPerMinute?: number;
   contraindications?: Injury[];
-  equipmentRequired?: string[];
+  equipmentRequired?: Equipment[];
+  isIsolater?: boolean; // For 3D rotation logic
 }
 
 export interface WorkoutSession {
@@ -116,6 +118,7 @@ export interface WorkoutSession {
   caloriesBurned?: number;
   notes?: string;
   isProgramWorkout?: boolean;
+  type: 'HIIT' | 'STRENGTH' | 'SKILL' | 'FLOW';
 }
 
 export interface ProgramDay {
@@ -123,7 +126,7 @@ export interface ProgramDay {
     title: string;
     focus: string;
     description: string;
-    workout: Exercise[]; // List of exercises for this day
+    workout: Exercise[]; 
     completed: boolean;
 }
 
@@ -131,8 +134,10 @@ export interface Program {
     id: string;
     title: string;
     description: string;
+    level: ExperienceLevel;
     durationWeeks: number;
     days: ProgramDay[];
+    image: string;
 }
 
 export interface HabitLog {
@@ -140,17 +145,6 @@ export interface HabitLog {
   waterIntake: number;
   sleepHours: number;
   mood: number;
-}
-
-export interface MeasurementLog {
-    id: string;
-    date: number;
-    weight: number;
-    chest?: number;
-    waist?: number;
-    arms?: number;
-    legs?: number;
-    photoFront?: string;
 }
 
 export interface Post {
@@ -169,6 +163,7 @@ export interface Achievement {
   title: string;
   description: string;
   icon: any;
+  xpReward: number;
 }
 
 export interface UserAchievement {
@@ -221,12 +216,12 @@ export interface DailyNutritionLog {
     items: MealItem[];
 }
 
-// --- NEW TYPES FOR LOGBOOK ---
+// Logbook
 export interface ExerciseSetLog {
     exerciseId: string;
     date: number;
     reps: number;
-    weight?: number; // Carga em kg (opcional)
+    weight?: number; 
     durationSeconds?: number;
-    isPR?: boolean; // Se foi um Personal Record
+    isPR?: boolean; 
 }

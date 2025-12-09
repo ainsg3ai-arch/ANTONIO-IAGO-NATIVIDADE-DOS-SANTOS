@@ -1,17 +1,31 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISE_DATABASE } from '../constants';
 import { ExerciseCategory, Exercise } from '../types';
-import { Search, Play, X, Flame, Plus, Dumbbell, Activity, CheckCircle2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { getExerciseLogs } from '../services/storageService';
+import { Search, Play, X, Flame, Plus, Dumbbell, Activity, CheckCircle2, ArrowDownRight, ArrowUpRight, TrendingUp, History } from 'lucide-react';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
+import { MiniChart } from '../components/MiniChart';
 
 export const Library: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<ExerciseCategory | 'Todos'>('Todos');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Exercise | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
 
-  // Otimização: Filtrar apenas quando as dependências mudarem
+  // Carregar logs quando um exercício é selecionado
+  useEffect(() => {
+      if(selected) {
+          const allLogs = getExerciseLogs();
+          const exLogs = allLogs.filter(l => l.exerciseId === selected.id);
+          // Converter para formato do gráfico
+          const chartData = exLogs.map(l => ({ date: l.date, value: l.reps }));
+          setLogs(chartData);
+      }
+  }, [selected]);
+
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     
@@ -97,6 +111,33 @@ export const Library: React.FC = () => {
                         <h1 className="text-3xl font-display font-bold uppercase italic leading-none mt-1">{selected.name}</h1>
                    </div>
 
+                   {/* PROGRESS CHART SECTION (NEW) */}
+                   <div className="mb-8 bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                       <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-sm font-bold uppercase text-white flex items-center gap-2">
+                               <TrendingUp size={16} className="text-ains-primary"/> Sua Evolução
+                           </h3>
+                           <span className="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400">Repetições</span>
+                       </div>
+                       
+                       <div className="h-32 w-full">
+                           <MiniChart data={logs} />
+                       </div>
+                       
+                       {logs.length > 0 && (
+                           <div className="mt-4 flex gap-4 border-t border-zinc-800 pt-3">
+                               <div>
+                                   <p className="text-[10px] text-zinc-500 uppercase font-bold">Recorde (PR)</p>
+                                   <p className="text-xl font-display font-bold text-white">{Math.max(...logs.map(l => l.value))} <span className="text-xs text-zinc-600">reps</span></p>
+                               </div>
+                               <div>
+                                   <p className="text-[10px] text-zinc-500 uppercase font-bold">Total Acumulado</p>
+                                   <p className="text-xl font-display font-bold text-white">{logs.reduce((a,b) => a + b.value, 0)} <span className="text-xs text-zinc-600">reps</span></p>
+                               </div>
+                           </div>
+                       )}
+                   </div>
+
                    {/* Stats Grid */}
                    <div className="grid grid-cols-3 gap-2 mb-6">
                         <div className="bg-zinc-900 p-3 rounded-lg text-center border border-zinc-800">
@@ -126,12 +167,11 @@ export const Library: React.FC = () => {
                        </ul>
                    </div>
 
-                    {/* VARIATIONS SECTION */}
+                    {/* VARIATIONS */}
                    {(selected.variations?.easier || selected.variations?.harder) && (
-                        <div className="mb-8 animate-fade-in">
-                            <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Variações & Progressões</h3>
+                        <div className="mb-8">
+                            <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Variações</h3>
                             <div className="grid grid-cols-2 gap-4">
-                                {/* Easier Column */}
                                 {selected.variations?.easier && (
                                     <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                                         <div className="flex items-center gap-2 mb-3 text-green-400 font-bold uppercase text-[10px] tracking-wider">
@@ -144,7 +184,6 @@ export const Library: React.FC = () => {
                                         </ul>
                                     </div>
                                 )}
-                                {/* Harder Column */}
                                 {selected.variations?.harder && (
                                     <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                                         <div className="flex items-center gap-2 mb-3 text-red-400 font-bold uppercase text-[10px] tracking-wider">
@@ -160,16 +199,6 @@ export const Library: React.FC = () => {
                             </div>
                         </div>
                    )}
-
-                   {/* Muscles */}
-                   <div className="mb-8">
-                       <h3 className="font-bold uppercase text-sm text-zinc-500 mb-3 border-b border-zinc-800 pb-1">Ativação Muscular</h3>
-                       <div className="flex flex-wrap gap-2">
-                           {selected.musculosPrimarios.map(m => (
-                               <span key={m} className="bg-ains-primary/10 text-ains-primary border border-ains-primary/30 px-3 py-1 rounded text-xs font-bold uppercase">{m}</span>
-                           ))}
-                       </div>
-                   </div>
 
                    {/* Tips */}
                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">

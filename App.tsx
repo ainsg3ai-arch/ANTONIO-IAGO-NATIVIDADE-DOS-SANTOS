@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
@@ -14,6 +15,7 @@ import { Nutrition } from './pages/Nutrition';
 import { Store } from './pages/Store';
 import { Campaign } from './pages/Campaign';
 import { Battle } from './pages/Battle';
+import { Programs } from './pages/Programs'; // New
 import { getProfile } from './services/storageService';
 
 const RequireProfile: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
@@ -44,6 +46,7 @@ const App: React.FC = () => {
           <Route path="/nutrition" element={<RequireProfile><Nutrition /></RequireProfile>} />
           <Route path="/store" element={<RequireProfile><Store /></RequireProfile>} />
           <Route path="/campaign" element={<RequireProfile><Campaign /></RequireProfile>} />
+          <Route path="/programs" element={<RequireProfile><Programs /></RequireProfile>} />
           <Route path="/battle" element={<RequireProfile><Battle /></RequireProfile>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
