@@ -220,3 +220,13 @@ export interface DailyNutritionLog {
     date: string; // YYYY-MM-DD
     items: MealItem[];
 }
+
+// --- NEW TYPES FOR LOGBOOK ---
+export interface ExerciseSetLog {
+    exerciseId: string;
+    date: number;
+    reps: number;
+    weight?: number; // Carga em kg (opcional)
+    durationSeconds?: number;
+    isPR?: boolean; // Se foi um Personal Record
+}

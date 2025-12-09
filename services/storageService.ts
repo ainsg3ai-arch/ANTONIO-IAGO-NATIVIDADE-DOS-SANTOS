@@ -1,5 +1,5 @@
 
-import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem } from '../types';
+import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem, ExerciseSetLog } from '../types';
 import { STORE_ITEMS, PROGRAM_30_DAYS } from '../constants';
 
 const KEYS = {
@@ -11,7 +11,8 @@ const KEYS = {
   TEMPLATES: 'ainsfit_templates',
   INVENTORY: 'ainsfit_inventory',
   PROGRAM_STATUS: 'ainsfit_program_status',
-  NUTRITION_LOGS: 'ainsfit_nutrition_logs' // New Key
+  NUTRITION_LOGS: 'ainsfit_nutrition_logs',
+  EXERCISE_LOGS: 'ainsfit_exercise_logs' // Nova chave para logs detalhados
 };
 
 export const saveProfile = (profile: UserProfile): void => {
@@ -96,7 +97,6 @@ export const saveWorkoutSession = (session: WorkoutSession): void => {
   
   // Logic to advance program if this was a program workout
   if (session.isProgramWorkout) {
-      // Find which day this corresponded to. Simplified logic: assume it matches the user's current day
       const status = getProgramStatus();
       completeProgramDay(status.currentDay);
   }
@@ -138,6 +138,41 @@ export const saveCurrentWorkout = (workout: WorkoutSession | null) => {
 export const getCurrentWorkout = (): WorkoutSession | null => {
     const data = localStorage.getItem(KEYS.CURRENT_WORKOUT);
     return data ? JSON.parse(data) : null;
+}
+
+// --- Performance Logs & PRs (NEW) ---
+
+export const getExerciseLogs = (): ExerciseSetLog[] => {
+    const data = localStorage.getItem(KEYS.EXERCISE_LOGS);
+    return data ? JSON.parse(data) : [];
+}
+
+export const getPersonalBest = (exerciseId: string): number => {
+    const logs = getExerciseLogs();
+    const exerciseLogs = logs.filter(l => l.exerciseId === exerciseId);
+    if (exerciseLogs.length === 0) return 0;
+    
+    // Simples PR baseado em reps (futuramente pode considerar carga estimada 1RM)
+    return Math.max(...exerciseLogs.map(l => l.reps));
+}
+
+export const saveSetResult = (log: ExerciseSetLog): boolean => {
+    const logs = getExerciseLogs();
+    const currentPR = getPersonalBest(log.exerciseId);
+    
+    let isPR = false;
+    if (log.reps > currentPR) {
+        isPR = true;
+        log.isPR = true;
+    }
+
+    logs.push(log);
+    localStorage.setItem(KEYS.EXERCISE_LOGS, JSON.stringify(logs));
+    
+    if(isPR) addXP(50); // Bônus por recorde
+    else addXP(10); // XP por set registrado
+
+    return isPR;
 }
 
 // --- Achievement System ---
@@ -246,6 +281,7 @@ export const exportData = () => {
         inventory: getInventory(),
         program: getProgramStatus(),
         nutrition: getNutritionLogs(),
+        logs: getExerciseLogs(),
         timestamp: Date.now()
     };
     
@@ -272,6 +308,7 @@ export const importData = async (file: File): Promise<boolean> => {
         if (data.inventory) localStorage.setItem(KEYS.INVENTORY, JSON.stringify(data.inventory));
         if (data.program) localStorage.setItem(KEYS.PROGRAM_STATUS, JSON.stringify(data.program));
         if (data.nutrition) localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(data.nutrition));
+        if (data.logs) localStorage.setItem(KEYS.EXERCISE_LOGS, JSON.stringify(data.logs));
         
         return true;
     } catch (e) {
