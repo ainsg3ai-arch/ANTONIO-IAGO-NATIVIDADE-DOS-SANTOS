@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Play, Loader2, RefreshCw, AlertCircle, Film } from 'lucide-react';
 
 interface VideoPlayerProps {
   url: string;
+  gifUrl?: string;
   placeholder?: string;
   title: string;
   className?: string;
@@ -11,137 +12,182 @@ interface VideoPlayerProps {
   isActive?: boolean;
 }
 
+type MediaType = 'youtube' | 'tiktok' | 'native' | 'gif' | 'image';
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
   url, 
+  gifUrl,
   placeholder, 
   title, 
   className = "",
   autoPlay = false,
   isActive = false
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [activeType, setActiveType] = useState<MediaType>('image');
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Sincroniza estado interno com a prop autoPlay/isActive
-  useEffect(() => {
-    if (isActive && autoPlay && !isPlaying) {
-      setIsPlaying(true);
-      setIsLoading(true);
-    } else if (!isActive) {
-      setIsPlaying(false);
-      setIsLoading(false);
-    }
-  }, [isActive, autoPlay]);
+  // Detecção do tipo de URL
+  const getMediaType = (uri: string): MediaType => {
+    if (!uri) return gifUrl ? 'gif' : 'image';
+    
+    // YouTube
+    const ytReg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+    if (uri.match(ytReg)) return 'youtube';
+    
+    // TikTok
+    const ttReg = /tiktok\.com\/.*video\/(\d+)/;
+    if (uri.match(ttReg)) return 'tiktok';
+    
+    // Direct Video (mp4, webm)
+    if (uri.match(/\.(mp4|webm|ogg|mov)$/) || uri.includes('blob:')) return 'native';
+    
+    // GIF
+    if (uri.match(/\.gif$/)) return 'gif';
+    
+    return 'image';
+  };
 
-  const getVideoId = (url: string) => {
-    if (!url) return null;
+  const getYouTubeId = (uri: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-    const match = url.match(regExp);
+    const match = uri.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  const videoId = getVideoId(url);
-
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-    setLoadError(false);
+  const getTikTokId = (uri: string) => {
+    const regExp = /tiktok\.com\/.*video\/(\d+)/;
+    const match = uri.match(regExp);
+    return match ? match[1] : null;
   };
 
-  // SAFETY TIMEOUT: Se o vídeo demorar mais de 6s para carregar, remove o spinner
   useEffect(() => {
-    let timeout: number;
-    if (isLoading) {
-      timeout = window.setTimeout(() => {
-        setIsLoading(false);
-      }, 6000);
+    setHasError(false);
+    setIsLoading(true);
+    setActiveType(getMediaType(url));
+  }, [url, gifUrl]);
+
+  // Fallback Logic
+  const handleError = () => {
+    console.warn(`Erro carregando ${activeType} para ${title}. Tentando fallback...`);
+    if (activeType === 'youtube' || activeType === 'tiktok' || activeType === 'native') {
+      if (gifUrl) setActiveType('gif');
+      else setActiveType('image');
+    } else if (activeType === 'gif') {
+      setActiveType('image');
+    } else {
+      setHasError(true);
     }
-    return () => clearTimeout(timeout);
-  }, [isLoading]);
+    setIsLoading(false);
+  };
 
-  const handleRetry = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setLoadError(false);
-      setIsPlaying(false);
-      setTimeout(() => {
-          setIsPlaying(true);
-          setIsLoading(true);
-      }, 100);
-  }
+  const handleLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
 
-  // Se URL for inválida ou erro
-  if (!videoId) {
+  // Renderização condicional por tipo
+  const renderContent = () => {
+    if (hasError) {
       return (
-          <div className={`relative w-full h-full bg-zinc-900 flex flex-col items-center justify-center overflow-hidden border-b border-zinc-800 ${className}`}>
-              <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-ains-primary to-black"></div>
-              <div className="z-10 text-center px-6">
-                 {placeholder ? (
-                     <img src={placeholder} className="w-40 h-40 rounded-full object-cover mx-auto mb-4 border-2 border-zinc-800 opacity-60" alt={title}/>
-                 ) : (
-                     <div className="w-24 h-24 rounded-full border-2 border-zinc-800 flex items-center justify-center mx-auto mb-4">
-                        <Play size={32} className="text-zinc-700" />
-                     </div>
-                 )}
-                  <h3 className="text-white font-display font-bold uppercase text-xl tracking-wider">{title}</h3>
-                  <p className="text-zinc-600 text-[10px] font-mono uppercase mt-2">Vídeo indisponível offline</p>
-              </div>
-          </div>
+        <div className="flex flex-col items-center justify-center h-full bg-zinc-900 p-6 text-center">
+          <AlertCircle className="text-ains-accent mb-2" size={32} />
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Falha Crítica de Mídia</p>
+        </div>
       );
-  }
+    }
 
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? 1 : 0}&controls=0&rel=0&playsinline=1&modestbranding=1&loop=1&playlist=${videoId}&mute=1&enablejsapi=1`;
+    switch (activeType) {
+      case 'youtube':
+        const ytId = getYouTubeId(url);
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&controls=0&rel=0&playsinline=1&modestbranding=1&loop=1&playlist=${ytId}&mute=1`}
+            title={title}
+            className="w-full h-full scale-[1.3] pointer-events-none"
+            frameBorder="0"
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        );
+
+      case 'tiktok':
+        const ttId = getTikTokId(url);
+        return (
+          <iframe
+            src={`https://www.tiktok.com/embed/v2/${ttId}?lang=pt-BR&autoplay=1`}
+            title={title}
+            className="w-full h-full pointer-events-none"
+            frameBorder="0"
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        );
+
+      case 'native':
+        return (
+          <video
+            ref={videoRef}
+            src={url}
+            autoPlay={autoPlay && isActive}
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            onCanPlay={handleLoad}
+            onError={handleError}
+          />
+        );
+
+      case 'gif':
+        return (
+          <img 
+            src={url.match(/\.gif$/) ? url : gifUrl} 
+            alt={title} 
+            className="w-full h-full object-cover"
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        );
+
+      case 'image':
+      default:
+        return (
+          <img 
+            src={placeholder || url} 
+            alt={title} 
+            className="w-full h-full object-cover opacity-60 grayscale"
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        );
+    }
+  };
 
   return (
     <div className={`relative w-full h-full overflow-hidden bg-black ${className}`}>
-      
-      {(!isPlaying || loadError) && (
-        <div 
-          onClick={() => { setLoadError(false); setIsPlaying(true); setIsLoading(true); }}
-          className="absolute inset-0 z-20 cursor-pointer group"
-        >
-          <img 
-            src={placeholder || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} 
-            alt={title}
-            className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity grayscale hover:grayscale-0 duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-          
-          <div className="absolute inset-0 flex items-center justify-center">
-            {loadError ? (
-                <div className="flex flex-col items-center">
-                    <AlertCircle className="text-red-500 mb-2" size={32} />
-                    <button onClick={handleRetry} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-full text-xs font-bold uppercase border border-red-500/50 flex items-center gap-2">
-                        <RefreshCw size={12}/> Recarregar
-                    </button>
-                </div>
-            ) : (
-                <div className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center shadow-neon group-hover:scale-110 transition-transform">
-                    <Play fill="white" className="text-white ml-1" size={32} strokeWidth={3} />
-                </div>
-            )}
-          </div>
+      {/* Skeleton / Loading */}
+      {isLoading && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-zinc-950">
+          <Loader2 className="animate-spin text-ains-primary" size={40} />
         </div>
       )}
 
-      {(isPlaying && !loadError) && (
-        <>
-            {isLoading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
-                    <Loader2 className="animate-spin text-ains-primary" size={40} />
-                </div>
-            )}
-            <iframe
-                ref={iframeRef}
-                src={embedUrl}
-                title={title}
-                className={`w-full h-full absolute inset-0 z-0 pointer-events-none scale-[1.3] transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`} 
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                onLoad={handleIframeLoad}
-                onError={() => { setLoadError(true); setIsLoading(false); }}
-            />
-        </>
+      {/* Main Content */}
+      <div className={`w-full h-full transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+        {renderContent()}
+      </div>
+
+      {/* Contextual Overlay (Sutil) */}
+      {!isLoading && !hasError && (
+        <div className="absolute top-4 right-4 z-20 opacity-30 hover:opacity-100 transition-opacity">
+            <div className="bg-black/50 p-2 rounded-full border border-white/10">
+                {activeType === 'youtube' && <Play size={14} className="text-red-500" fill="currentColor" />}
+                {activeType === 'tiktok' && <Film size={14} className="text-ains-primary" />}
+                {activeType === 'native' && <Play size={14} className="text-ains-success" fill="currentColor" />}
+                {activeType === 'gif' && <span className="text-[8px] font-black text-white">GIF</span>}
+            </div>
+        </div>
       )}
     </div>
   );

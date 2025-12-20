@@ -57,6 +57,13 @@ export enum Equipment {
 
 export type Gender = 'male' | 'female';
 
+export interface UserRituals {
+  water: number; // glasses (target 8)
+  sleep: boolean;
+  protein: boolean;
+  meditation: boolean;
+}
+
 export interface UserProfile {
   name: string;
   gender: Gender;
@@ -76,6 +83,7 @@ export interface UserProfile {
   coins: number;
   campaignProgress: number; 
   equippedSkin?: string;
+  rituals?: UserRituals;
 }
 
 export interface Exercise {
@@ -89,12 +97,13 @@ export interface Exercise {
   difficultyLevel: ExperienceLevel;
   videoPlaceholder: string;
   videoUrl: string;
+  gifUrl?: string;
   description: string;
   stepByStep: string[]; 
   commonErrors: string[]; 
   breathingTip: string; 
-  progressions?: string[]; // Nome de exercícios mais difíceis
-  regressions?: string[]; // Nome de exercícios mais fáceis
+  progressions?: string[]; 
+  regressions?: string[]; 
   reps?: string; 
   sets?: number;
   durationSeconds?: number;
@@ -160,10 +169,6 @@ export interface StoreItem {
     description: string;
 }
 
-/** 
- * Added missing interfaces to resolve compilation errors 
- */
-
 export interface HabitLog {
   date: string;
   completed?: boolean;
@@ -195,7 +200,7 @@ export interface ExerciseSetLog {
   id?: string;
   exerciseId: string;
   reps: number;
-  date: number; // Timestamp for chart compatibility
+  date: number; 
   isPR?: boolean;
 }
 

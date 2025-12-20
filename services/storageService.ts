@@ -1,5 +1,5 @@
 
-import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem, ExerciseSetLog } from '../types';
+import { UserProfile, WorkoutSession, HabitLog, UserAchievement, WorkoutTemplate, InventoryItem, DailyNutritionLog, MealItem, ExerciseSetLog, UserRituals, MuscleGroup } from '../types';
 import { STORE_ITEMS } from '../constants';
 
 const KEYS = {
@@ -12,7 +12,8 @@ const KEYS = {
   INVENTORY: 'ainsfit_inventory',
   PROGRAM_STATUS: 'ainsfit_program_status',
   NUTRITION_LOGS: 'ainsfit_nutrition_logs',
-  EXERCISE_LOGS: 'ainsfit_exercise_logs'
+  EXERCISE_LOGS: 'ainsfit_exercise_logs',
+  DAILY_RITUALS: 'ainsfit_daily_rituals'
 };
 
 const safeParse = <T>(key: string, fallback: T): T => {
@@ -40,6 +41,46 @@ export const getProfile = (): UserProfile | null => {
   return safeParse<UserProfile | null>(KEYS.PROFILE, null);
 };
 
+export const getRituals = (): UserRituals => {
+    const today = new Date().toISOString().split('T')[0];
+    const allRituals = safeParse<Record<string, UserRituals>>(KEYS.DAILY_RITUALS, {});
+    return allRituals[today] || { water: 0, sleep: false, protein: false, meditation: false };
+};
+
+export const updateRitual = (key: keyof UserRituals, value: any) => {
+    const today = new Date().toISOString().split('T')[0];
+    const allRituals = safeParse<Record<string, UserRituals>>(KEYS.DAILY_RITUALS, {});
+    const current = allRituals[today] || { water: 0, sleep: false, protein: false, meditation: false };
+    
+    // @ts-ignore
+    current[key] = value;
+    allRituals[today] = current;
+    
+    localStorage.setItem(KEYS.DAILY_RITUALS, JSON.stringify(allRituals));
+    
+    // Reward coins on ritual completion (except water, which rewards per glass)
+    if (value === true) addXP(20);
+    else if (key === 'water') addXP(5);
+};
+
+export const getMuscleVolumeStats = () => {
+    const history = getHistory();
+    const last7Days = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const recentWorkouts = history.filter(h => h.dateCreated > last7Days);
+    
+    const volume: Record<string, number> = {};
+    Object.values(MuscleGroup).forEach(m => volume[m] = 0);
+    
+    recentWorkouts.forEach(session => {
+        session.exercises.forEach(ex => {
+            const sets = ex.sets || 3;
+            volume[ex.muscleGroup] = (volume[ex.muscleGroup] || 0) + sets;
+        });
+    });
+    
+    return volume;
+};
+
 export const getProgramStatus = () => {
     return safeParse(KEYS.PROGRAM_STATUS, { currentDay: 1, completedDays: [] });
 }
@@ -61,7 +102,6 @@ export const addXP = (amount: number) => {
         profile.xp = (profile.xp || 0) + amount;
         profile.coins = (profile.coins || 0) + Math.floor(amount / 2);
         
-        // Progressão Invisível: Ganha um "nível de força" a cada 1000 XP
         const newLevel = Math.floor(profile.xp / 1000);
         if (newLevel > profile.levelNumber) {
             profile.levelNumber = newLevel;
@@ -112,7 +152,6 @@ export const saveWorkoutSession = (session: WorkoutSession): void => {
       completeProgramDay(status.currentDay);
   }
 
-  // Bonus XP por completar treino
   const xpEarned = 200 + (session.exercises.length * 20);
   addXP(xpEarned);
 };
@@ -194,14 +233,12 @@ export const getTemplates = (): WorkoutTemplate[] => {
     return safeParse<WorkoutTemplate[]>(KEYS.TEMPLATES, []);
 }
 
-// Fix: Implement getDailyNutrition to retrieve logs for a specific date
 export const getDailyNutrition = (date: string): DailyNutritionLog => {
   const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
   const log = logs.find(l => l.date === date);
   return log || { date, items: [] };
 };
 
-// Fix: Implement addMealItem to store new meal entries
 export const addMealItem = (item: MealItem): void => {
   const date = new Date().toISOString().split('T')[0];
   const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
@@ -216,7 +253,6 @@ export const addMealItem = (item: MealItem): void => {
   localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
 };
 
-// Fix: Implement removeMealItem to delete specific meal entries
 export const removeMealItem = (itemId: string, date: string): void => {
   const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
   const logIndex = logs.findIndex(l => l.date === date);

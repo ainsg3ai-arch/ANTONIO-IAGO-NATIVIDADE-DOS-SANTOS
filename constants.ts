@@ -14,6 +14,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
         difficultyLevel: ExperienceLevel.BEGINNER,
         videoPlaceholder: 'https://img.youtube.com/vi/jWc8gHl_oaE/hqdefault.jpg',
         videoUrl: 'https://www.youtube.com/shorts/jWc8gHl_oaE',
+        gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpwaG50NTVyZ2R1eDVhYnhhdzAydzF0d3F0eG00eGdtZTV1ZGRtMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMGBy9nIEOvS7u/giphy.gif',
         description: 'Mantenha os joelhos no chão e o tronco reto.',
         stepByStep: ['Joelhos no chão', 'Mãos largura dos ombros', 'Desça o peito'],
         commonErrors: ['Quadril muito alto'],
@@ -31,7 +32,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
         difficultyScore: 2,
         difficultyLevel: ExperienceLevel.BEGINNER,
         videoPlaceholder: 'https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg',
-        videoUrl: 'https://www.youtube.com/shorts/IODxDxX7oi4',
+        videoUrl: 'https://www.tiktok.com/@calistenia_online/video/7212345678901234567', // Exemplo de TikTok
         description: 'Corpo reto como uma prancha.',
         stepByStep: ['Mãos sob os ombros', 'Corpo reto', 'Peito quase toca o chão'],
         commonErrors: ['Lombar caída'],

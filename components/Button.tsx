@@ -2,7 +2,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
   fullWidth?: boolean;
 }
 
@@ -13,18 +13,14 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  // Estilo "Industrial/Rock": Uppercase, Bold, levemente inclinado (skew)
-  const baseStyles = "relative px-6 py-4 font-display font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transform -skew-x-3 overflow-hidden group";
+  const baseStyles = "relative px-8 py-4 font-display font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none rounded-2xl flex items-center justify-center gap-2 overflow-hidden";
   
   const variants = {
-    // Azul Elétrico Sólido
-    primary: "bg-ains-primary text-black hover:bg-white hover:text-black shadow-neon",
-    // Metal Escuro
-    secondary: "bg-ains-surface border border-zinc-700 text-white hover:border-ains-primary hover:text-ains-primary",
-    // Outline Neon
-    outline: "bg-transparent border-2 border-ains-primary text-ains-primary hover:bg-ains-primary/10",
-    // Vermelho Alerta
-    danger: "bg-ains-accent text-white hover:bg-red-700 shadow-neon-red"
+    primary: "bg-ains-primary text-ains-bg shadow-neon hover:brightness-110",
+    secondary: "bg-ains-surface text-white hover:bg-ains-card",
+    outline: "bg-transparent border-2 border-ains-primary text-ains-primary hover:bg-ains-primary/5",
+    danger: "bg-ains-accent text-white",
+    success: "bg-ains-success text-ains-bg shadow-success"
   };
 
   return (
@@ -32,11 +28,7 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
-      {/* Glitch Effect Element */}
-      <div className="absolute top-0 left-0 w-full h-full bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-12"></div>
-      
-      {/* Un-skew text for readability */}
-      <span className="block transform skew-x-3">{children}</span>
+      <span className="relative z-10">{children}</span>
     </button>
   );
 };

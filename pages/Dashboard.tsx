@@ -1,28 +1,38 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, Exercise } from '../types';
-import { getProfile, saveCurrentWorkout, getHistory } from '../services/storageService';
+import { UserProfile, Exercise, UserRituals } from '../types';
+import { getProfile, saveCurrentWorkout, getHistory, getRituals, updateRitual } from '../services/storageService';
 import { generateUUID } from '../services/aiLogic';
 import { QUICK_ROUTINES, EXERCISE_DATABASE } from '../constants';
-import { Play, ChevronRight, Zap, Target, Flame, Calendar } from 'lucide-react';
+import { Play, ChevronRight, Zap, Target, Flame, Trophy, Droplets, Moon, Coffee, Heart } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState({ streak: 0, totalWorkouts: 0 });
+  const [rituals, setRituals] = useState<UserRituals>({ water: 0, sleep: false, protein: false, meditation: false });
+  const [stats, setStats] = useState({ streak: 0, total: 0 });
 
   useEffect(() => {
     const p = getProfile();
     if (!p) { navigate('/onboarding'); return; }
     setProfile(p);
-    
+    setRituals(getRituals());
     const history = getHistory();
-    setStats({ 
-        streak: history.length > 0 ? Math.min(history.length, 7) : 0, 
-        totalWorkouts: history.length 
-    });
+    setStats({ streak: history.length > 0 ? 3 : 0, total: history.length });
   }, [navigate]);
+
+  const handleRitualClick = (key: keyof UserRituals) => {
+      let newValue: any;
+      if (key === 'water') {
+          newValue = Math.min(8, rituals.water + 1);
+      } else {
+          newValue = !rituals[key];
+      }
+      updateRitual(key, newValue);
+      setRituals(prev => ({ ...prev, [key]: newValue }));
+      setProfile(getProfile()); // Refresh profile for coin update
+  };
 
   const startRoutine = (routine: typeof QUICK_ROUTINES[0]) => {
       const selectedExs = routine.exIds.map(id => 
@@ -43,104 +53,115 @@ export const Dashboard: React.FC = () => {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-ains-bg text-white pb-32 animate-fade-in">
-      {/* Header Minimalista */}
-      <div className="p-6 pt-10 flex justify-between items-center">
+    <div className="min-h-screen bg-ains-bg text-white pb-32 px-6 page-enter">
+      {/* Top Bar */}
+      <header className="py-10 flex justify-between items-center">
           <div>
-              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Status Atleta</p>
-              <h1 className="text-3xl font-display font-bold uppercase italic leading-none">{profile.name.split(' ')[0]}</h1>
+              <p className="text-ains-muted text-[10px] font-bold uppercase tracking-widest mb-1">Elite Protocol</p>
+              <h1 className="text-3xl font-display font-bold uppercase leading-none">{profile.name.split(' ')[0]}</h1>
           </div>
           <div className="flex gap-4">
-              <div className="text-center">
+              <div className="bg-ains-surface px-4 py-2 rounded-2xl text-center border border-white/5">
                   <div className="text-ains-primary font-display font-bold text-xl">{stats.streak}</div>
-                  <div className="text-[8px] text-zinc-600 uppercase font-black">Streak</div>
+                  <div className="text-[8px] text-ains-muted uppercase font-black">Streak</div>
               </div>
-              <div onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer">
-                  <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`} alt="Avatar" />
+              <div onClick={() => navigate('/profile')} className="w-12 h-12 rounded-full border-2 border-ains-primary/20 p-1 cursor-pointer">
+                  <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`} className="w-full h-full rounded-full object-cover" alt="User" />
               </div>
           </div>
-      </div>
+      </header>
 
-      <div className="px-6 space-y-6">
-          {/* Card de Treino do Dia - Grande e Direto */}
+      <div className="space-y-8">
+          {/* Rituais Diários */}
+          <section>
+              <h3 className="text-[10px] font-black uppercase text-ains-muted tracking-[0.2em] mb-4 flex items-center gap-2">
+                  <Heart size={14} className="text-ains-accent" /> Rituais de Elite
+              </h3>
+              <div className="grid grid-cols-4 gap-3">
+                  <button 
+                    onClick={() => handleRitualClick('water')}
+                    className={`aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all ${rituals.water >= 8 ? 'bg-ains-primary border-ains-primary shadow-neon' : 'bg-ains-surface border-white/5'}`}
+                  >
+                      <Droplets size={20} className={rituals.water >= 8 ? 'text-ains-bg' : 'text-ains-primary'} />
+                      <span className={`text-[10px] font-black mt-1 ${rituals.water >= 8 ? 'text-ains-bg' : 'text-ains-muted'}`}>{rituals.water}/8</span>
+                  </button>
+                  <button 
+                    onClick={() => handleRitualClick('sleep')}
+                    className={`aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all ${rituals.sleep ? 'bg-ains-success border-ains-success shadow-success' : 'bg-ains-surface border-white/5'}`}
+                  >
+                      <Moon size={20} className={rituals.sleep ? 'text-ains-bg' : 'text-ains-success'} />
+                      <span className={`text-[10px] font-black mt-1 ${rituals.sleep ? 'text-ains-bg' : 'text-ains-muted'}`}>SONO</span>
+                  </button>
+                  <button 
+                    onClick={() => handleRitualClick('protein')}
+                    className={`aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all ${rituals.protein ? 'bg-orange-500 border-orange-500 shadow-lg' : 'bg-ains-surface border-white/5'}`}
+                  >
+                      <Coffee size={20} className={rituals.protein ? 'text-ains-bg' : 'text-orange-500'} />
+                      <span className={`text-[10px] font-black mt-1 ${rituals.protein ? 'text-ains-bg' : 'text-ains-muted'}`}>DIETA</span>
+                  </button>
+                  <button 
+                    onClick={() => handleRitualClick('meditation')}
+                    className={`aspect-square rounded-2xl flex flex-col items-center justify-center border transition-all ${rituals.meditation ? 'bg-purple-500 border-purple-500 shadow-lg' : 'bg-ains-surface border-white/5'}`}
+                  >
+                      <Zap size={20} className={rituals.meditation ? 'text-ains-bg' : 'text-purple-500'} />
+                      <span className={`text-[10px] font-black mt-1 ${rituals.meditation ? 'text-ains-bg' : 'text-ains-muted'}`}>FOCO</span>
+                  </button>
+              </div>
+          </section>
+
+          {/* Main Hero Card */}
           <div 
             onClick={() => startRoutine(QUICK_ROUTINES[0])}
-            className="relative w-full p-8 rounded-[2rem] bg-ains-primary text-black shadow-neon overflow-hidden group cursor-pointer active:scale-95 transition-all"
+            className="relative w-full aspect-[16/10] rounded-[2.5rem] bg-ains-primary text-ains-bg p-8 flex flex-col justify-end overflow-hidden group active:scale-[0.98] transition-all shadow-neon"
           >
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                  <Play size={100} fill="black" />
+              <div className="absolute top-4 right-6 opacity-20">
+                  <Play size={120} fill="currentColor" />
               </div>
               <div className="relative z-10">
-                  <span className="text-[10px] font-black uppercase tracking-widest bg-black/10 px-2 py-0.5 rounded">Recomendado</span>
-                  <h2 className="text-4xl font-display font-bold uppercase italic mt-1 leading-none">Treino do Dia</h2>
-                  <div className="flex gap-3 mt-4">
-                      <div className="flex items-center gap-1 bg-black/80 text-white text-[10px] px-3 py-1.5 rounded-full font-bold uppercase">
-                          <Zap size={12}/> 12 MIN
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-ains-bg/10 px-3 py-1 rounded-full mb-3 inline-block">Sugerido para hoje</span>
+                  <h2 className="text-4xl font-display font-bold uppercase italic leading-none mb-4">Mestre da<br/>Fundação</h2>
+                  <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5 bg-ains-bg text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase">
+                          <Zap size={14} className="text-ains-primary" /> 12 Min
                       </div>
-                      <div className="flex items-center gap-1 bg-black/80 text-white text-[10px] px-3 py-1.5 rounded-full font-bold uppercase">
-                          Iniciante
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-ains-bg">
+                        <Play size={20} fill="currentColor" className="ml-1" />
                       </div>
                   </div>
               </div>
           </div>
 
-          {/* Lista de Rotinas - Cards Estilo Home Workout */}
+          {/* Protocolos de Ação */}
           <div>
-              <h3 className="text-sm font-bold uppercase text-zinc-500 mb-4 flex items-center gap-2">
-                  <Target size={16} /> Rotinas Rápidas
-              </h3>
-              <div className="space-y-3">
+              <div className="flex justify-between items-center mb-5">
+                  <h3 className="text-sm font-bold uppercase text-ains-muted flex items-center gap-2">
+                    <Target size={16} /> Protocolos de Ação
+                  </h3>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
                   {QUICK_ROUTINES.slice(1).map((routine) => (
                       <div 
                         key={routine.id}
                         onClick={() => startRoutine(routine)}
-                        className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl hover:border-ains-primary transition-all cursor-pointer group active:bg-zinc-800"
+                        className="bg-ains-surface border border-white/5 p-6 rounded-[2rem] flex items-center justify-between hover:bg-ains-card transition-colors cursor-pointer group active:scale-[0.98]"
                       >
-                          <div className="flex items-center gap-4">
-                              <div className={`${routine.color} w-12 h-12 rounded-xl flex items-center justify-center`}>
-                                  <routine.icon size={24} className="text-white" />
+                          <div className="flex items-center gap-5">
+                              <div className={`${routine.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:rotate-3 transition-transform`}>
+                                  <routine.icon size={28} />
                               </div>
                               <div>
-                                  <h4 className="font-bold uppercase text-sm leading-none mb-1">{routine.name}</h4>
-                                  <div className="flex gap-2 text-[10px] text-zinc-500 font-bold uppercase">
+                                  <h4 className="font-display font-bold uppercase text-lg leading-none mb-1">{routine.name}</h4>
+                                  <div className="flex gap-2 text-[10px] text-ains-muted font-bold uppercase">
                                       <span>{routine.duration}</span>
-                                      <span>•</span>
+                                      <span className="text-ains-primary">•</span>
                                       <span>{routine.level}</span>
                                   </div>
                               </div>
                           </div>
-                          <ChevronRight className="text-zinc-800 group-hover:text-ains-primary transition-all" />
+                          <ChevronRight className="text-ains-muted group-hover:text-ains-primary transition-colors" />
                       </div>
                   ))}
-              </div>
-          </div>
-
-          {/* Seção de Planos 30 Dias */}
-          <div 
-            onClick={() => navigate('/campaign')}
-            className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-zinc-800 transition-colors"
-          >
-              <div className="flex items-center gap-4">
-                  <div className="bg-orange-500/10 p-3 rounded-full">
-                    <Calendar className="text-orange-500" size={24}/>
-                  </div>
-                  <div>
-                      <h4 className="font-bold uppercase text-sm">Desafio 30 Dias</h4>
-                      <p className="text-[10px] text-zinc-500 uppercase">Evolução progressiva</p>
-                  </div>
-              </div>
-              <ChevronRight className="text-zinc-700" />
-          </div>
-
-          {/* Status Simples */}
-          <div className="bg-zinc-950 rounded-2xl p-6 border border-zinc-900 grid grid-cols-2 gap-4">
-              <div className="text-center border-r border-zinc-900">
-                  <div className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Treinos Feitos</div>
-                  <div className="text-xl font-display font-bold">{stats.totalWorkouts}</div>
-              </div>
-              <div className="text-center">
-                  <div className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Nível IA</div>
-                  <div className="text-xl font-display font-bold text-ains-primary">{Math.floor(profile.xp / 1000) + 1}</div>
               </div>
           </div>
       </div>
