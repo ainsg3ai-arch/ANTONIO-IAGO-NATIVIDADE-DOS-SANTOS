@@ -5,10 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <title>AINSFIT</title>
-    <meta name="description" content="Offline AI Fitness Trainer" />
+    <meta name="description" content="Offline Bodyweight Training" />
     <meta name="theme-color" content="#050505" />
     
-    <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -17,43 +16,33 @@
           extend: {
             colors: {
               ains: {
-                bg: '#050505',      // Deepest Black
-                surface: '#121212', // Graphite
-                card: '#1C1C1E',    // Metal
-                primary: '#00AFFF', // Electric Blue (Tech/Energy)
-                secondary: '#005F87', // Deep Blue
-                accent: '#FF0033',  // Neon Red (Intensity/Rock)
-                text: '#F2F2F2',    // Off White
-                muted: '#525252',   // Concrete Grey
+                bg: '#050505',
+                surface: '#0C0C0C',
+                card: '#141414',
+                primary: '#00AFFF',
+                accent: '#FF0033',
+                text: '#F2F2F2',
+                muted: '#666666',
               }
             },
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['Inter', 'system-ui', 'sans-serif'],
               display: ['Oswald', 'sans-serif'],
-              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-            },
-            backgroundImage: {
-                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-                'metal': "linear-gradient(145deg, #1c1c1e, #121212)",
+              mono: ['ui-monospace', 'monospace'],
             },
             boxShadow: {
                 'neon': '0 0 20px rgba(0, 175, 255, 0.3)',
-                'neon-red': '0 0 20px rgba(255, 0, 51, 0.3)',
-                'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                'neon-strong': '0 0 30px rgba(0, 175, 255, 0.5)',
             },
             animation: {
-                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                'slide-up': 'slideUp 0.3s ease-out forwards',
-                'fade-in': 'fadeIn 0.4s ease-out forwards',
+                'pulse-fast': 'pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'glitch': 'glitch 0.2s ease-in-out',
             },
             keyframes: {
-                slideUp: {
-                    '0%': { transform: 'translateY(20px)', opacity: '0' },
-                    '100%': { transform: 'translateY(0)', opacity: '1' },
-                },
-                fadeIn: {
-                    '0%': { opacity: '0' },
-                    '100%': { opacity: '1' },
+                glitch: {
+                    '0%, 100%': { transform: 'translate(0)' },
+                    '33%': { transform: 'translate(-2px, 2px)' },
+                    '66%': { transform: 'translate(2px, -2px)' },
                 }
             }
           }
@@ -61,27 +50,40 @@
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Oswald:wght@500;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Oswald:wght@500;700&display=swap');
 
       body {
         background-color: #050505;
         color: #F2F2F2;
+        -webkit-font-smoothing: antialiased;
         overscroll-behavior-y: none;
-        -webkit-tap-highlight-color: transparent;
+        letter-spacing: -0.01em;
       }
       
-      ::-webkit-scrollbar { display: none; width: 0px; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      ::-webkit-scrollbar { display: none; }
       
       .glass-panel {
-          background: rgba(28, 28, 30, 0.85); /* Increased opacity for performance */
+          background: rgba(12, 12, 12, 0.98);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid rgba(255, 255, 255, 0.03);
       }
       
       .text-glow {
           text-shadow: 0 0 10px rgba(0, 175, 255, 0.5);
+      }
+
+      .btn-active:active {
+          transform: scale(0.96) skewX(-3deg);
+      }
+      
+      /* Smooth Page Transitions */
+      .page-transition {
+          animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
       }
     </style>
 <script type="importmap">

@@ -45,7 +45,7 @@ export const Battle: React.FC = () => {
         {mode === 'menu' && (
             <div className="space-y-6 animate-slide-up">
                 <div className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border border-red-500/30 p-8 rounded-xl text-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-noise opacity-10"></div>
+                    {/* Noise overlay removed */}
                     <Swords size={64} className="text-red-500 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
                     <h2 className="text-2xl font-display font-bold uppercase mb-2">Duelo Offline</h2>
                     <p className="text-zinc-400 text-sm mb-6 leading-relaxed">

@@ -8,20 +8,19 @@ export enum Goal {
 }
 
 export enum ExperienceLevel {
-  BEGINNER = 'Iniciante (Fundação)',
-  INTERMEDIATE = 'Intermediário (Progresso)',
-  ADVANCED = 'Avançado (Elite)',
-  ELITE = 'Deus da Calistenia'
+  BEGINNER = 'Iniciante (Nível 1-2)',
+  INTERMEDIATE = 'Intermediário (Nível 3)',
+  ADVANCED = 'Avançado (Nível 4)',
+  ELITE = 'Elite (Nível 5)'
 }
 
 export enum ExerciseCategory {
   PUSH = 'Empurrar (Push)',
   PULL = 'Puxar (Pull)',
-  LEGS = 'Pernas',
-  CORE = 'Core/Abdômen',
-  CARDIO = 'Cardio/HIIT',
-  SKILL = 'Skill/Isometria',
-  MOBILITY = 'Mobilidade'
+  LEGS = 'Pernas (Legs)',
+  CORE = 'Core / Abdômen',
+  SKILL = 'Habilidades / Isometria',
+  MOBILITY = 'Mobilidade / Flow'
 }
 
 export enum MuscleGroup {
@@ -31,8 +30,7 @@ export enum MuscleGroup {
   SHOULDERS = 'Ombros',
   ARMS = 'Braços',
   ABS = 'Abdômen',
-  CARDIO = 'Cardio',
-  FULL_BODY = 'Full Body'
+  FULL_BODY = 'Corpo Inteiro'
 }
 
 export enum Injury {
@@ -51,8 +49,9 @@ export enum CoachStyle {
 
 export enum Equipment {
   NONE = 'Somente Peso do Corpo',
-  BAR = 'Barra Fixa / Argolas',
+  BAR = 'Barra Fixa',
   PARALLETTES = 'Paralelas',
+  RINGS = 'Argolas',
   BAND = 'Elásticos'
 }
 
@@ -73,12 +72,10 @@ export interface UserProfile {
   workoutFrequency: number;
   onboarded: boolean;
   xp: number;
-  levelNumber: number; // 1 to 50
+  levelNumber: number; 
   coins: number;
   campaignProgress: number; 
   equippedSkin?: string;
-  silentMode?: boolean; // New setting
-  aiEnabled?: boolean; // New setting
 }
 
 export interface Exercise {
@@ -88,24 +85,20 @@ export interface Exercise {
   muscleGroup: MuscleGroup;
   musculosPrimarios: string[];
   musculosSecundarios?: string[];
-  difficulty: ExperienceLevel;
+  difficultyScore: number; // 1 to 5
+  difficultyLevel: ExperienceLevel;
   videoPlaceholder: string;
-  videoUrl: string; // YouTube/TikTok link
+  videoUrl: string;
   description: string;
   stepByStep: string[]; 
-  commonErrors?: string[]; 
-  breathingTip?: string; 
-  variations?: { 
-      easier?: string[];
-      harder?: string[];
-  };
-  reps?: string; // "10-12" or "FALHA"
+  commonErrors: string[]; 
+  breathingTip: string; 
+  progressions?: string[]; // Nome de exercícios mais difíceis
+  regressions?: string[]; // Nome de exercícios mais fáceis
+  reps?: string; 
   sets?: number;
   durationSeconds?: number;
-  caloriesPerMinute?: number;
-  contraindications?: Injury[];
   equipmentRequired?: Equipment[];
-  isIsolater?: boolean; // For 3D rotation logic
 }
 
 export interface WorkoutSession {
@@ -116,7 +109,6 @@ export interface WorkoutSession {
   completed: boolean;
   durationTaken?: number;
   caloriesBurned?: number;
-  notes?: string;
   isProgramWorkout?: boolean;
   type: 'HIIT' | 'STRENGTH' | 'SKILL' | 'FLOW';
 }
@@ -140,24 +132,6 @@ export interface Program {
     image: string;
 }
 
-export interface HabitLog {
-  date: string;
-  waterIntake: number;
-  sleepHours: number;
-  mood: number;
-}
-
-export interface Post {
-    id: string;
-    author: string;
-    avatar: string;
-    image?: string;
-    content: string;
-    likes: number;
-    timestamp: number;
-    isLikedByMe: boolean;
-}
-
 export interface Achievement {
   id: string;
   title: string;
@@ -171,11 +145,10 @@ export interface UserAchievement {
   unlockedAt: number;
 }
 
-export interface ChatMessage {
-  id: string;
-  sender: 'user' | 'ai';
-  text: string;
-  timestamp: number;
+export interface InventoryItem {
+    id: string;
+    itemId: string;
+    acquiredAt: number;
 }
 
 export interface StoreItem {
@@ -187,41 +160,48 @@ export interface StoreItem {
     description: string;
 }
 
-export interface InventoryItem {
-    id: string;
-    itemId: string;
-    acquiredAt: number;
+/** 
+ * Added missing interfaces to resolve compilation errors 
+ */
+
+export interface HabitLog {
+  date: string;
+  completed?: boolean;
 }
 
 export interface WorkoutTemplate {
-    id: string;
-    name: string;
-    exercises: Exercise[];
-    createdAt: number;
+  id: string;
+  name: string;
+  exercises: Exercise[];
+  createdAt: number;
 }
 
-// Nutrition Types
 export interface MealItem {
-    id: string;
-    name: string;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    icon: string;
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  icon: string;
 }
 
 export interface DailyNutritionLog {
-    date: string; // YYYY-MM-DD
-    items: MealItem[];
+  date: string;
+  items: MealItem[];
 }
 
-// Logbook
 export interface ExerciseSetLog {
-    exerciseId: string;
-    date: number;
-    reps: number;
-    weight?: number; 
-    durationSeconds?: number;
-    isPR?: boolean; 
+  id?: string;
+  exerciseId: string;
+  reps: number;
+  date: number; // Timestamp for chart compatibility
+  isPR?: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'ai' | 'user';
+  text: string;
+  timestamp: number;
 }

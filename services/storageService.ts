@@ -15,17 +15,15 @@ const KEYS = {
   EXERCISE_LOGS: 'ainsfit_exercise_logs'
 };
 
-// --- SAFE PARSE HELPER (CRITICAL FIX) ---
-// Impede que o app trave (Tela Branca) se o JSON estiver corrompido.
 const safeParse = <T>(key: string, fallback: T): T => {
     try {
         const data = localStorage.getItem(key);
-        if (!data || data === "undefined" || data === "null") return fallback;
+        if (data === null || data === undefined || data === "undefined" || data === "null" || data.trim() === "") {
+            return fallback;
+        }
         return JSON.parse(data);
     } catch (e) {
-        console.error(`CRITICAL: Error parsing key ${key}. Resetting to fallback.`, e);
-        // Opcional: Limpar a chave corrompida para evitar erros futuros
-        // localStorage.removeItem(key); 
+        console.error(`Error parsing key ${key}`, e);
         return fallback;
     }
 };
@@ -34,7 +32,7 @@ export const saveProfile = (profile: UserProfile): void => {
   try {
       localStorage.setItem(KEYS.PROFILE, JSON.stringify(profile));
   } catch (e) {
-      console.error("Storage Full or Error", e);
+      console.error("Storage Error", e);
   }
 };
 
@@ -42,7 +40,6 @@ export const getProfile = (): UserProfile | null => {
   return safeParse<UserProfile | null>(KEYS.PROFILE, null);
 };
 
-// --- Program Tracking ---
 export const getProgramStatus = () => {
     return safeParse(KEYS.PROGRAM_STATUS, { currentDay: 1, completedDays: [] });
 }
@@ -58,18 +55,21 @@ export const completeProgramDay = (dayNumber: number) => {
     return false;
 }
 
-// --- XP & Gamification ---
-
 export const addXP = (amount: number) => {
     const profile = getProfile();
     if (profile) {
         profile.xp = (profile.xp || 0) + amount;
         profile.coins = (profile.coins || 0) + Math.floor(amount / 2);
+        
+        // Progressão Invisível: Ganha um "nível de força" a cada 1000 XP
+        const newLevel = Math.floor(profile.xp / 1000);
+        if (newLevel > profile.levelNumber) {
+            profile.levelNumber = newLevel;
+        }
+        
         saveProfile(profile);
     }
 }
-
-// --- Store & Inventory ---
 
 export const getInventory = (): InventoryItem[] => {
     return safeParse<InventoryItem[]>(KEYS.INVENTORY, []);
@@ -78,13 +78,11 @@ export const getInventory = (): InventoryItem[] => {
 export const buyItem = (itemId: string): boolean => {
     const profile = getProfile();
     const item = STORE_ITEMS.find(i => i.id === itemId);
-    
     if (!profile || !item) return false;
 
     if ((profile.coins || 0) >= item.cost) {
         profile.coins -= item.cost;
         saveProfile(profile);
-        
         const inventory = getInventory();
         inventory.push({ id: Date.now().toString(), itemId, acquiredAt: Date.now() });
         localStorage.setItem(KEYS.INVENTORY, JSON.stringify(inventory));
@@ -104,8 +102,6 @@ export const equipItem = (itemId: string) => {
     }
 }
 
-// --- Workouts & History ---
-
 export const saveWorkoutSession = (session: WorkoutSession): void => {
   const history = getHistory();
   history.push(session);
@@ -116,7 +112,8 @@ export const saveWorkoutSession = (session: WorkoutSession): void => {
       completeProgramDay(status.currentDay);
   }
 
-  const xpEarned = Math.floor((session.caloriesBurned || 100));
+  // Bonus XP por completar treino
+  const xpEarned = 200 + (session.exercises.length * 20);
   addXP(xpEarned);
 };
 
@@ -151,40 +148,17 @@ export const getCurrentWorkout = (): WorkoutSession | null => {
     return safeParse<WorkoutSession | null>(KEYS.CURRENT_WORKOUT, null);
 }
 
-// --- Performance Logs & PRs ---
-
 export const getExerciseLogs = (): ExerciseSetLog[] => {
     return safeParse<ExerciseSetLog[]>(KEYS.EXERCISE_LOGS, []);
 }
 
-export const getPersonalBest = (exerciseId: string): number => {
-    const logs = getExerciseLogs();
-    const exerciseLogs = logs.filter(l => l.exerciseId === exerciseId);
-    if (exerciseLogs.length === 0) return 0;
-    
-    return Math.max(...exerciseLogs.map(l => l.reps));
-}
-
 export const saveSetResult = (log: ExerciseSetLog): boolean => {
     const logs = getExerciseLogs();
-    const currentPR = getPersonalBest(log.exerciseId);
-    
-    let isPR = false;
-    if (log.reps > currentPR) {
-        isPR = true;
-        log.isPR = true;
-    }
-
     logs.push(log);
     localStorage.setItem(KEYS.EXERCISE_LOGS, JSON.stringify(logs));
-    
-    if(isPR) addXP(50);
-    else addXP(10);
-
-    return isPR;
+    addXP(15);
+    return true;
 }
-
-// --- Achievement System ---
 
 export const getUnlockedAchievements = (): UserAchievement[] => {
     return safeParse<UserAchievement[]>(KEYS.ACHIEVEMENTS, []);
@@ -193,11 +167,9 @@ export const getUnlockedAchievements = (): UserAchievement[] => {
 const saveUnlockedAchievement = (achievementId: string) => {
     const current = getUnlockedAchievements();
     if (current.find(a => a.achievementId === achievementId)) return;
-
     current.push({ achievementId, unlockedAt: Date.now() });
     localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(current));
-    
-    addXP(200);
+    addXP(500);
 }
 
 export const checkAndUnlockAchievements = (): string[] => {
@@ -205,20 +177,12 @@ export const checkAndUnlockAchievements = (): string[] => {
     const existingIds = getUnlockedAchievements().map(a => a.achievementId);
     const newUnlocked: string[] = [];
 
-    if (history.length >= 1 && !existingIds.includes('first_step')) {
-        saveUnlockedAchievement('first_step');
-        newUnlocked.push('Primeiro Passo');
+    if (history.length >= 1 && !existingIds.includes('first_blood')) {
+        saveUnlockedAchievement('first_blood');
+        newUnlocked.push('Batismo de Fogo');
     }
-
-    if (history.length >= 7 && !existingIds.includes('week_warrior')) {
-        saveUnlockedAchievement('week_warrior');
-        newUnlocked.push('Guerreiro Semanal');
-    }
-
     return newUnlocked;
 }
-
-// --- Custom Templates ---
 
 export const saveTemplate = (template: WorkoutTemplate) => {
     const templates = getTemplates();
@@ -230,49 +194,38 @@ export const getTemplates = (): WorkoutTemplate[] => {
     return safeParse<WorkoutTemplate[]>(KEYS.TEMPLATES, []);
 }
 
-export const deleteTemplate = (id: string) => {
-    const templates = getTemplates().filter(t => t.id !== id);
-    localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(templates));
-}
-
-// --- Nutrition Logs ---
-
-export const getNutritionLogs = (): DailyNutritionLog[] => {
-    return safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
-}
-
+// Fix: Implement getDailyNutrition to retrieve logs for a specific date
 export const getDailyNutrition = (date: string): DailyNutritionLog => {
-    const logs = getNutritionLogs();
-    const log = logs.find(l => l.date === date);
-    return log || { date, items: [] };
-}
+  const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
+  const log = logs.find(l => l.date === date);
+  return log || { date, items: [] };
+};
 
-export const addMealItem = (item: MealItem) => {
-    const date = new Date().toISOString().split('T')[0];
-    const logs = getNutritionLogs();
-    const index = logs.findIndex(l => l.date === date);
-    
-    if (index >= 0) {
-        logs[index].items.push(item);
-    } else {
-        logs.push({ date, items: [item] });
-    }
-    
+// Fix: Implement addMealItem to store new meal entries
+export const addMealItem = (item: MealItem): void => {
+  const date = new Date().toISOString().split('T')[0];
+  const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
+  const logIndex = logs.findIndex(l => l.date === date);
+  
+  if (logIndex >= 0) {
+    logs[logIndex].items.push(item);
+  } else {
+    logs.push({ date, items: [item] });
+  }
+  
+  localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
+};
+
+// Fix: Implement removeMealItem to delete specific meal entries
+export const removeMealItem = (itemId: string, date: string): void => {
+  const logs = safeParse<DailyNutritionLog[]>(KEYS.NUTRITION_LOGS, []);
+  const logIndex = logs.findIndex(l => l.date === date);
+  
+  if (logIndex >= 0) {
+    logs[logIndex].items = logs[logIndex].items.filter(i => i.id !== itemId);
     localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
-    addXP(5);
-}
-
-export const removeMealItem = (itemId: string, date: string) => {
-    const logs = getNutritionLogs();
-    const index = logs.findIndex(l => l.date === date);
-    
-    if (index >= 0) {
-        logs[index].items = logs[index].items.filter(i => i.id !== itemId);
-        localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(logs));
-    }
-}
-
-// --- Data Backup & Restore ---
+  }
+};
 
 export const exportData = () => {
     try {
@@ -281,24 +234,15 @@ export const exportData = () => {
             history: getHistory(),
             habits: getHabits(),
             achievements: getUnlockedAchievements(),
-            templates: getTemplates(),
-            inventory: getInventory(),
-            program: getProgramStatus(),
-            nutrition: getNutritionLogs(),
-            logs: getExerciseLogs(),
             timestamp: Date.now()
         };
-        
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `AINSFIT_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
+        link.download = `AINSFIT_DATA_${new Date().toISOString().split('T')[0]}.json`;
         link.click();
-        document.body.removeChild(link);
     } catch (e) {
-        alert("Erro ao exportar dados.");
         console.error(e);
     }
 };
@@ -307,22 +251,11 @@ export const importData = async (file: File): Promise<boolean> => {
     try {
         const text = await file.text();
         const data = JSON.parse(text);
-        
-        // Validação básica antes de salvar
         if (data.profile) localStorage.setItem(KEYS.PROFILE, JSON.stringify(data.profile));
         if (data.history) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
-        if (data.habits) localStorage.setItem(KEYS.HABITS, JSON.stringify(data.habits));
-        if (data.achievements) localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(data.achievements));
-        if (data.templates) localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(data.templates));
-        if (data.inventory) localStorage.setItem(KEYS.INVENTORY, JSON.stringify(data.inventory));
-        if (data.program) localStorage.setItem(KEYS.PROGRAM_STATUS, JSON.stringify(data.program));
-        if (data.nutrition) localStorage.setItem(KEYS.NUTRITION_LOGS, JSON.stringify(data.nutrition));
-        if (data.logs) localStorage.setItem(KEYS.EXERCISE_LOGS, JSON.stringify(data.logs));
-        
         return true;
     } catch (e) {
-        console.error("Failed to import data", e);
-        alert("Arquivo inválido ou corrompido.");
+        console.error(e);
         return false;
     }
 };

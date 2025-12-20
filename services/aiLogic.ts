@@ -14,90 +14,74 @@ const isExerciseSafe = (exercise: Exercise, injuries: Injury[]): boolean => {
             if (exercise.name.includes('Salto') || exercise.name.includes('Burpee') || exercise.name.includes('Búlgaro')) return false;
         }
         if (injury === Injury.SHOULDERS) {
-            if (exercise.muscleGroup === MuscleGroup.SHOULDERS && exercise.name.includes('Desenvolvimento')) return false;
-            if (exercise.name.includes('Dips')) return false;
+            if (exercise.muscleGroup === MuscleGroup.SHOULDERS && (exercise.name.includes('Plancha') || exercise.name.includes('Handstand'))) return false;
         }
-        if (injury === Injury.BACK) {
-            if (exercise.name.includes('Terra') || exercise.name.includes('Curvada')) return false;
+        if (injury === Injury.WRISTS) {
+            if (exercise.name.includes('Handstand') || exercise.name.includes('Plan')) return false;
         }
     }
     return true;
 };
 
 export const generateWorkoutAI = (profile: UserProfile): WorkoutSession => {
-  const { equipment, goal, level, injuries, workoutDuration } = profile;
+  const { equipment, goal, injuries, workoutDuration, levelNumber } = profile;
 
-  // 1. Filtrar Exercícios Seguros e Disponíveis
+  // 1. Filtrar Exercícios Disponíveis e Seguros
   let availableExercises = EXERCISE_DATABASE.filter(ex => {
     const required = ex.equipmentRequired || [Equipment.NONE];
     const hasEquipment = required.every(req => req === Equipment.NONE || equipment.includes(req));
     const safe = isExerciseSafe(ex, injuries);
-    return hasEquipment && safe;
+    
+    // Filtrar por nível aproximado (até 1 nível acima do atual para desafio)
+    const currentLevelScore = Math.min(5, Math.floor(levelNumber / 10) + 1);
+    const suitableLevel = ex.difficultyScore <= currentLevelScore + 1;
+
+    return hasEquipment && safe && suitableLevel;
   });
 
-  // 2. Cálculo de Volume baseado no Tempo (Algoritmo de Densidade)
-  // Estima: 4 min por exercício (incluindo descanso)
-  const estimatedTimePerExercise = 4; // min (execução + descanso + troca)
-  const targetExerciseCount = Math.floor((workoutDuration || 45) / estimatedTimePerExercise);
+  // 2. Determinar Volume
+  const timePerEx = 5; // Calistenia requer mais tempo de setup e foco na forma
+  const targetCount = Math.max(4, Math.floor(workoutDuration / timePerEx));
   
-  const finalCount = Math.max(3, targetExerciseCount); // Mínimo 3 exercícios
-
   const workoutPlan: Exercise[] = [];
 
-  // 3. Estratégia de Treino (Full Body com Prioridade)
-  const priorities = [MuscleGroup.LEGS, MuscleGroup.CHEST, MuscleGroup.BACK, MuscleGroup.SHOULDERS, MuscleGroup.ABS, MuscleGroup.ARMS, MuscleGroup.CARDIO];
+  // 3. Estrutura de Treino (Priorizar Progressão de Skill/Força primeiro)
+  const sortedByDifficulty = [...availableExercises].sort((a, b) => b.difficultyScore - a.difficultyScore);
   
-  // Embaralha prioridades para variar
+  // Escolher 1 Skill/Isometria Pesada primeiro (Fresco)
+  const skills = sortedByDifficulty.filter(e => e.category.includes('Skill'));
+  if (skills.length > 0) workoutPlan.push({...skills[0], sets: 4});
+
+  // Preencher com PUSH, PULL e CORE
+  const priorities = [MuscleGroup.CHEST, MuscleGroup.BACK, MuscleGroup.ABS, MuscleGroup.LEGS];
   priorities.sort(() => Math.random() - 0.5);
 
   for (const group of priorities) {
-      if (workoutPlan.length >= finalCount) break;
-
-      const candidates = availableExercises.filter(e => e.muscleGroup === group);
+      if (workoutPlan.length >= targetCount) break;
+      const candidates = sortedByDifficulty.filter(e => e.muscleGroup === group && !workoutPlan.find(w => w.id === e.id));
       if (candidates.length > 0) {
-          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          const pick = candidates[0]; // Pega o mais desafiador disponível para o grupo
           
-          // Ajuste de Repetições
-          let adjustedReps = pick.reps;
-          if (goal === Goal.BUILD_MUSCLE && !pick.durationSeconds) adjustedReps = '8-12';
-          if (goal === Goal.LOSE_WEIGHT && !pick.durationSeconds) adjustedReps = '15-20';
+          // Ajuste dinâmico de intensidade
+          let reps = pick.reps;
+          if (goal === Goal.BUILD_MUSCLE) reps = '8-12';
+          if (goal === Goal.LOSE_WEIGHT) reps = '15-20';
 
-          if (!workoutPlan.find(e => e.id === pick.id)) {
-              workoutPlan.push({
-                  ...pick,
-                  reps: adjustedReps,
-                  sets: (workoutDuration && workoutDuration < 20) ? 2 : 3
-              });
-          }
+          workoutPlan.push({
+              ...pick,
+              reps,
+              sets: 3
+          });
       }
   }
-
-  // Se ainda sobrar espaço, preencher com Cardio ou Abs
-  while (workoutPlan.length < finalCount) {
-      const fillers = availableExercises.filter(e => e.muscleGroup === MuscleGroup.CARDIO || e.muscleGroup === MuscleGroup.ABS);
-      const pick = fillers[Math.floor(Math.random() * fillers.length)];
-      if (!workoutPlan.find(e => e.id === pick.id)) {
-           workoutPlan.push({...pick, sets: 2});
-      } else {
-          break; // Evitar loop infinito
-      }
-  }
-
-  // Determinar tipo de treino
-  let type: 'HIIT' | 'STRENGTH' | 'SKILL' | 'FLOW' = 'STRENGTH';
-  if (goal === Goal.LOSE_WEIGHT || goal === Goal.ENDURANCE) type = 'HIIT';
-  if (goal === Goal.SKILL_CALISTHENICS) type = 'SKILL';
-  if (goal === Goal.MOBILITY) type = 'FLOW';
 
   return {
       id: generateUUID(),
-      name: `Treino ${goal} (${workoutDuration}min)`,
+      name: `Protocolo ${goal} AI`,
       dateCreated: Date.now(),
       exercises: workoutPlan,
       completed: false,
-      durationTaken: 0,
-      caloriesBurned: 0,
-      type: type
+      type: 'STRENGTH'
   };
 };
 
@@ -106,14 +90,16 @@ export const getAIChatResponse = (message: string, profile: UserProfile): ChatMe
     let responseText = "";
     const style = profile.coachStyle;
 
-    if (lowerMsg.includes('oi') || lowerMsg.includes('olá')) {
-        responseText = style === CoachStyle.MILITARY ? "SENTIDO! ESTAMOS AQUI PARA TREINAR, RECRUTA!" : "E aí, campeão! Pronto para destruir hoje?";
-    } else if (lowerMsg.includes('dieta') || lowerMsg.includes('comer')) {
-        responseText = "Músculo se constrói na cozinha. Proteína em todas as refeições e água o dia todo. Sem desculpas.";
-    } else if (lowerMsg.includes('dor') || lowerMsg.includes('lesão')) {
-        responseText = "Se a dor é aguda, PARE. Não confunda desconforto de treino com lesão.";
+    if (lowerMsg.includes('calistenia')) {
+        responseText = "Calistenia é sobre controle. Domine seu peso corporal antes de adicionar carga externa. Foco na amplitude máxima.";
+    } else if (lowerMsg.includes('dor') || lowerMsg.includes('articulação')) {
+        responseText = "Na calistenia, tendões levam mais tempo para adaptar que músculos. Se sentir dor nas articulações, regresse um nível.";
+    } else if (lowerMsg.includes('muscle up')) {
+        responseText = "Para o Muscle Up, você precisa de uma puxada explosiva até o umbigo. Treine 'High Pull-ups' primeiro.";
+    } else if (lowerMsg.includes('oi') || lowerMsg.includes('olá')) {
+        responseText = style === CoachStyle.MILITARY ? "SENTIDO! ESTAMOS AQUI PARA FORJAR ELITE. QUAL A DÚVIDA?" : "E aí! Pronto para elevar o nível hoje? Como posso ajudar?";
     } else {
-        responseText = "Foco no treino. Consistência vence intensidade.";
+        responseText = "Consistência é o segredo. Um treino de 15 min hoje é melhor que um de 2 horas que nunca acontece.";
     }
 
     return {

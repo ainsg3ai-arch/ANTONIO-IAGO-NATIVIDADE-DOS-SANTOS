@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
@@ -60,7 +61,7 @@ export const Onboarding: React.FC = () => {
 
   if (step === 0 && !isEditMode) return (
       <div className="h-screen bg-ains-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-noise opacity-20"></div>
+          {/* Noise overlay removed */}
           <div className="z-10 text-center animate-fade-in">
               <Logo size={100} className="mb-12" />
               <h1 className="text-5xl font-display font-bold text-white uppercase mb-4 leading-none">Domine<br/><span className="text-ains-primary">Seu Corpo</span></h1>
